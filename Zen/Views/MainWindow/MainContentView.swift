@@ -128,7 +128,7 @@ struct MainContentView: View {
                 Spacer()
                 ShareButton {
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString("Check out Zen — a mindfulness companion for Mac\nhttps://github.com/lukashammarstrom/zen", forType: .string)
+                    NSPasteboard.general.setString("Check out Zen — a mindfulness companion for Mac\nhttps://mettafive.github.io/zen", forType: .string)
                     HapticService.playGeneric()
                     withAnimation(.easeOut(duration: 0.2)) { showCopiedToast = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
