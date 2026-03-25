@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var bodyReminderTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        CrashReporter.install()
+        CrashReporter.sendPendingReport()
         setupModelContainer()
         wireServices()
         timerService.start()
