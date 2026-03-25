@@ -192,6 +192,7 @@ final class EdgePillarManager {
     ) {
         if isAtEdge {
             // Filling
+            lingerTime = 0 // reset linger so it doesn't carry over
             prevFill = fill
             fill += fillRate * dt
             velocity = 0
@@ -261,6 +262,13 @@ final class EdgePillarManager {
         } else {
             dismissPanel(&leftPanel)
             leftFill = 0; leftVelocity = 0
+        }
+
+        // Skip linger on the winning side — fall immediately
+        if edge == .left {
+            leftLingerTime = lingerDuration
+        } else {
+            rightLingerTime = lingerDuration
         }
 
         // The winning side: just release it — gravity does the rest
