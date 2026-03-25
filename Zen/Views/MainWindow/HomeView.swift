@@ -12,6 +12,9 @@ struct HomeView: View {
     @State private var importState: ImportState = .idle
     @State private var importError: String? = nil
     @State private var showImportError = false
+    @State private var showFeedback = false
+    @State private var feedbackText = ""
+    @State private var feedbackSent = false
 
     enum ImportState: Equatable {
         case idle
@@ -57,6 +60,74 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                     }
                     .padding(20)
+
+                    // Feedback section
+                    HStack {
+                        Spacer()
+                        if showFeedback {
+                            VStack(alignment: .trailing, spacing: 10) {
+                                TextEditor(text: $feedbackText)
+                                    .font(.callout)
+                                    .frame(maxWidth: 400, minHeight: 80, maxHeight: 120)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                                HStack(spacing: 8) {
+                                    if feedbackSent {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundStyle(.green)
+                                            Text("Sent!")
+                                                .foregroundStyle(.green)
+                                        }
+                                        .font(.caption)
+                                        .transition(.opacity)
+                                    }
+
+                                    Button("Cancel") {
+                                        withAnimation(.easeOut(duration: 0.15)) {
+                                            showFeedback = false
+                                            feedbackText = ""
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+
+                                    Button("Send") {
+                                        sendFeedback()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.small)
+                                    .disabled(feedbackText.trimmingCharacters(in: .whitespaces).isEmpty)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        } else {
+                            Button {
+                                HapticService.playGeneric()
+                                withAnimation(.easeOut(duration: 0.15)) {
+                                    showFeedback = true
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "envelope")
+                                        .font(.system(size: 10))
+                                    Text("Submit bug or feature request")
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(.tertiary)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                        }
+                    }
                 }
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
                     handleDrop(providers: providers)
@@ -82,6 +153,34 @@ struct HomeView: View {
                 Button("OK") {}
             } message: {
                 Text(importError ?? "Could not import this file. Make sure it's a valid .zenmood file.")
+            }
+        }
+    }
+
+    // MARK: - Feedback
+
+    private func sendFeedback() {
+        let text = feedbackText.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+
+        let subject = "Zen Feedback"
+        let body = text
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
+
+        if let url = URL(string: "mailto:lukas@mitthjarta.se?subject=\(encodedSubject)&body=\(encodedBody)") {
+            NSWorkspace.shared.open(url)
+        }
+
+        HapticService.playLevelChange()
+        withAnimation(.easeOut(duration: 0.2)) {
+            feedbackSent = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                showFeedback = false
+                feedbackText = ""
+                feedbackSent = false
             }
         }
     }
