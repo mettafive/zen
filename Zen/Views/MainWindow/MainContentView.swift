@@ -103,25 +103,36 @@ struct MainContentView: View {
                 Spacer()
             }
 
-            // Center: live timer — click to go to settings timer mode
-            Button {
-                HapticService.playGeneric()
-                selectedTab = 1
-            } label: {
-                HStack(spacing: 4) {
-                    Text(appDelegate.timerService.timeRemaining.minutesAndSeconds)
-                        .font(.system(.body, design: .monospaced).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                    Text("/")
-                        .font(.caption)
-                        .foregroundStyle(.quaternary)
-                    Text(appDelegate.timerService.currentInterval.minutesAndSeconds)
-                        .font(.system(.caption, design: .monospaced).monospacedDigit())
-                        .foregroundStyle(.tertiary)
+            // Center: timer + pause/play
+            HStack(spacing: 8) {
+                Button {
+                    HapticService.playGeneric()
+                    selectedTab = 1
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(appDelegate.timerService.timeRemaining.minutesAndSeconds)
+                            .font(.system(.body, design: .monospaced).monospacedDigit())
+                            .foregroundStyle(appDelegate.timerService.isRunning ? .secondary : .tertiary)
+                        Text("/")
+                            .font(.caption)
+                            .foregroundStyle(.quaternary)
+                        Text(appDelegate.timerService.currentInterval.minutesAndSeconds)
+                            .font(.system(.caption, design: .monospaced).monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                    }
+                    .fixedSize()
                 }
-                .fixedSize()
+                .buttonStyle(.plain)
+
+                PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
+                    HapticService.playGeneric()
+                    if appDelegate.timerService.isRunning {
+                        appDelegate.timerService.pause()
+                    } else {
+                        appDelegate.timerService.resume()
+                    }
+                }
             }
-            .buttonStyle(.plain)
 
             // Right: share
             HStack {
@@ -140,6 +151,32 @@ struct MainContentView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(.bar)
+    }
+}
+
+// MARK: - Pause/Play Button
+
+private struct PausePlayButton: View {
+    let isRunning: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            Image(systemName: isRunning ? "pause.fill" : "play.fill")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+                .frame(width: 20, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(isHovered ? 1.0 : 0.4)
+        .animation(.easeOut(duration: 0.1), value: isHovered)
+        .animation(.easeInOut(duration: 0.15), value: isRunning)
+        .onHover { h in isHovered = h }
+        .help(isRunning ? "Pause timer" : "Resume timer")
     }
 }
 
