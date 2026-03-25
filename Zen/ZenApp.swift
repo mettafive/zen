@@ -1,0 +1,37 @@
+import SwiftUI
+import SwiftData
+
+@main
+struct ZenApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var updater = UpdaterService()
+
+    var sharedModelContainer: ModelContainer = {
+        do {
+            return try ModelContainer(for: PresenceEntry.self)
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+
+    var body: some Scene {
+        WindowGroup {
+            MainContentView(appDelegate: appDelegate)
+                .environment(\.appDelegate, appDelegate)
+        }
+        .modelContainer(sharedModelContainer)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates...") {
+                    updater.checkForUpdates()
+                }
+                .disabled(!updater.canCheckForUpdates)
+            }
+        }
+
+        MenuBarExtra("Zen", systemImage: "drop.fill") {
+            MenuBarMenu()
+                .environment(\.appDelegate, appDelegate)
+        }
+    }
+}

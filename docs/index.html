@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen — Stay Present While You Work</title>
+    <meta name="description" content="A gentle macOS companion that helps you stay present while you work. No distractions. Just awareness.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F7F6F3;
+            --bg-card: #FFFFFF;
+            --text: #111111;
+            --text-secondary: #6B6B6B;
+            --text-tertiary: #9B9B9B;
+            --border: #EAEAEA;
+            --accent: #D4A574;
+            --accent-bg: #F5EDE4;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            font-size: 1rem;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Newsreader', Georgia, serif;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+
+        h1 {
+            font-size: 3.2rem;
+            letter-spacing: -0.04em;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .tag {
+            display: inline-block;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 5px 16px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* ——— Hero ——— */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 80px 0;
+        }
+
+        .hero .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 48px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hero-text {
+            order: 2;
+        }
+
+        .hero-visual {
+            order: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .hero-visual::before {
+            content: '';
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-icon {
+            width: 140px;
+            height: 140px;
+            border-radius: 30px;
+            background: linear-gradient(180deg, #f8f8f8 0%, #eeeeee 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-icon svg {
+            width: 52px;
+            height: 68px;
+        }
+
+        .hero-tagline {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 380px;
+            margin-bottom: 36px;
+            line-height: 1.6;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            background: var(--text);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: box-shadow 0.25s ease;
+        }
+
+        .download-btn:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+
+        .download-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .platform {
+            margin-top: 14px;
+            font-size: 0.78rem;
+            color: var(--text-tertiary);
+        }
+
+        /* ——— Sections ——— */
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+            margin-bottom: 48px;
+        }
+
+        .section-header h2 {
+            margin-bottom: 0;
+        }
+
+        /* ——— Steps ——— */
+        .steps {
+            max-width: 640px;
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 20px;
+            align-items: baseline;
+            padding: 28px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .step:first-child {
+            padding-top: 0;
+        }
+
+        .step-num {
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: 1.8rem;
+            color: var(--accent);
+            line-height: 1.1;
+        }
+
+        .step h3 {
+            margin-bottom: 6px;
+        }
+
+        .step p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ——— Features Bento ——— */
+        .bento {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .bento-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 36px 32px;
+            transition: box-shadow 0.25s ease;
+        }
+
+        .bento-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .bento-card.wide {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .bento-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 16px;
+            color: var(--text-tertiary);
+        }
+
+        .bento-card p {
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            line-height: 1.6;
+        }
+
+        /* ——— Quote ——— */
+        @property --shimmer-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+        .quote-section {
+            padding: 64px 0;
+            overflow: visible;
+        }
+
+        .quote-block {
+            position: relative;
+            max-width: 520px;
+            padding: 36px 40px;
+            border-radius: 16px;
+        }
+
+        /* Solid background layer — sits above the glow, below content */
+        .quote-block-inner {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Shimmer border — rotating spark around the stroke */
+        .quote-block::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 1px;
+            background: conic-gradient(
+                from var(--shimmer-angle),
+                var(--border) 0%,
+                var(--border) 60%,
+                var(--accent) 72%,
+                rgba(255, 255, 255, 0.9) 78%,
+                var(--accent) 84%,
+                var(--border) 96%,
+                var(--border) 100%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            animation: shimmer-rotate 6s linear infinite;
+            z-index: 1;
+        }
+
+        /* Solid fill behind text */
+        .quote-block::after {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            border-radius: 15px;
+            background: var(--bg);
+            z-index: 1;
+        }
+
+        /* Outer glow — separate element to avoid clipping */
+        .quote-glow {
+            position: absolute;
+            inset: -12px;
+            border-radius: 28px;
+            background: conic-gradient(
+                from var(--shimmer-angle),
+                transparent 0%,
+                transparent 68%,
+                rgba(212, 165, 116, 0.15) 76%,
+                rgba(212, 165, 116, 0.08) 82%,
+                transparent 90%,
+                transparent 100%
+            );
+            filter: blur(10px);
+            animation: shimmer-rotate 6s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer-rotate {
+            to { --shimmer-angle: 360deg; }
+        }
+
+        .quote-text {
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: 1.6rem;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .quote-attr {
+            font-size: 0.78rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-tertiary);
+        }
+
+        /* ——— CTA ——— */
+        .cta {
+            border-top: 1px solid var(--border);
+            padding: 100px 0;
+        }
+
+        .cta p {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 420px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        /* ——— Footer ——— */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 32px 0;
+        }
+
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        footer .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        /* ——— Scroll animation base ——— */
+        .animate-in {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        /* ——— Desktop ——— */
+        @media (min-width: 768px) {
+            h1 { font-size: 4.8rem; }
+            h2 { font-size: 2.4rem; }
+
+            .hero .container {
+                grid-template-columns: 1fr 1fr;
+                gap: 64px;
+            }
+
+            .hero-text { order: 1; }
+            .hero-visual { order: 2; justify-content: flex-end; }
+
+            .hero-icon {
+                width: 200px;
+                height: 200px;
+                border-radius: 40px;
+            }
+
+            .hero-icon svg {
+                width: 72px;
+                height: 96px;
+            }
+
+            .hero-visual::before {
+                width: 360px;
+                height: 360px;
+            }
+
+            .section { padding: 100px 0; }
+
+            .bento {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .bento-card.wide {
+                grid-column: 1 / -1;
+                grid-template-columns: 1fr auto;
+                gap: 48px;
+            }
+
+            .bento-card.wide .bento-icon {
+                width: 56px;
+                height: 56px;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-text">
+                <span class="tag animate-in">macOS App</span>
+                <h1 class="animate-in">Zen</h1>
+                <p class="hero-tagline animate-in">A gentle companion that helps you stay present while you work.</p>
+                <a href="https://github.com/lukashammarstrom/zen/releases/latest/download/Zen.dmg" class="download-btn animate-in">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download for Mac
+                </a>
+                <p class="platform animate-in">macOS 14.0+ &middot; Free</p>
+            </div>
+            <div class="hero-visual animate-in">
+                <div class="hero-icon">
+                    <img src="logo.png" alt="Zen" style="width: 65%; height: 65%; object-fit: contain; border-radius: 12px;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header animate-in">
+                <h2>How it works</h2>
+            </div>
+            <div class="steps">
+                <div class="step animate-in">
+                    <span class="step-num">1</span>
+                    <div>
+                        <h3>A gentle chime plays</h3>
+                        <p>At regular intervals, a soft tone plays and your screen edges glow. A mindfulness quote appears. Time to check in with yourself.</p>
+                    </div>
+                </div>
+                <div class="step animate-in">
+                    <span class="step-num">2</span>
+                    <div>
+                        <h3>Slide to the edge</h3>
+                        <p>Move your mouse to the left edge for "present" or the right edge for "not present." Hold for two seconds. Feel the haptic feedback as it fills.</p>
+                    </div>
+                </div>
+                <div class="step animate-in">
+                    <span class="step-num">3</span>
+                    <div>
+                        <h3>Your rhythm adapts</h3>
+                        <p>Stay present twice in a row and the interval grows. Drift away and it shortens. Over time, Zen finds your natural attention span.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header animate-in">
+                <h2>Designed to disappear</h2>
+            </div>
+            <div class="bento">
+                <div class="bento-card wide animate-in">
+                    <div>
+                        <svg class="bento-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="24" cy="24" r="18"/>
+                            <path d="M24 14v10l6 4"/>
+                        </svg>
+                        <h3>Invisible by design</h3>
+                        <p>No windows. No popups. Just screen edges and haptic feedback. Zen stays out of your way until you need it.</p>
+                    </div>
+                    <div></div>
+                </div>
+                <div class="bento-card animate-in">
+                    <svg class="bento-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M24 6c-4 6-12 12-12 20a12 12 0 0 0 24 0c0-8-8-14-12-20z"/>
+                        <circle cx="24" cy="28" r="4" fill="none"/>
+                    </svg>
+                    <h3>Body awareness</h3>
+                    <p>Every few minutes, a gentle reminder: unclench your jaw, soften your shoulders, feel your feet on the ground.</p>
+                </div>
+                <div class="bento-card animate-in">
+                    <svg class="bento-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 32c4-4 8-2 12-6s8-2 12-6"/>
+                        <path d="M8 38c4-4 8-2 12-6s8-2 12-6"/>
+                        <circle cx="24" cy="16" r="6"/>
+                    </svg>
+                    <h3>Wisdom tradition</h3>
+                    <p>100 Buddha quotes on presence, letting go, and the nature of mind. A new one with each check-in.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quote-section">
+        <div class="container">
+            <div class="quote-block animate-in">
+                <div class="quote-glow"></div>
+                <div class="quote-block-inner">
+                    <p class="quote-text">"Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment."</p>
+                    <p class="quote-attr">Buddha</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2 class="animate-in">Start being present</h2>
+            <p class="animate-in">Zen starts at 45 seconds. As your practice deepens, the intervals grow. There is no goal. Only awareness.</p>
+            <a href="https://github.com/lukashammarstrom/zen/releases/latest/download/Zen.dmg" class="download-btn animate-in">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download for Mac
+            </a>
+            <p class="platform animate-in">macOS 14.0+ &middot; Free</p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <span>Made by <a href="https://github.com/lukashammarstrom">Lukas Hammarstr&ouml;m</a></span>
+            <div class="footer-links">
+                <a href="https://github.com/lukashammarstrom/zen">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.animate-in').forEach((el, i) => {
+            el.style.transition = `opacity 600ms ease ${i * 60}ms, transform 600ms ease ${i * 60}ms`;
+            observer.observe(el);
+        });
+    </script>
+
+</body>
+</html>

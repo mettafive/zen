@@ -1,0 +1,176 @@
+import SwiftUI
+import AppKit
+
+struct MainContentView: View {
+    @ObservedObject private var appDelegate: AppDelegate
+    @ObservedObject private var settings = AppSettings.shared
+    @State private var selectedTab = 0
+    @State private var linkCopied = false
+    @State private var showCopiedToast = false
+
+    init(appDelegate: AppDelegate) {
+        self.appDelegate = appDelegate
+    }
+
+    var body: some View {
+        if !settings.onboardingComplete {
+            OnboardingView {
+                // Onboarding done
+            }
+        } else if appDelegate.votePending {
+            VoteView { wasPresent in
+                appDelegate.recordVote(wasPresent: wasPresent)
+            }
+        } else {
+            VStack(spacing: 0) {
+                topBar
+                Divider()
+
+                TabView(selection: $selectedTab) {
+                    HomeView()
+                        .tabItem {
+                            Label("Home", systemImage: "house")
+                        }
+                        .tag(0)
+
+                    SettingsView()
+                        .tabItem {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                        .tag(1)
+
+                    AnalyticsView()
+                        .tabItem {
+                            Label("Analytics", systemImage: "chart.bar")
+                        }
+                        .tag(2)
+
+                    AboutView()
+                        .tabItem {
+                            Label("About", systemImage: "info.circle")
+                        }
+                        .tag(3)
+                }
+            }
+            .frame(minWidth: 500, minHeight: 400)
+            .overlay(alignment: .bottom) {
+                if showCopiedToast {
+                    Text("Link copied")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.ultraThinMaterial)
+                                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                        )
+                        .padding(.bottom, 12)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+            }
+            .background {
+                // Hidden buttons for Cmd+1/2/3/4 tab switching
+                VStack {
+                    Button("") { selectedTab = 0 }
+                        .keyboardShortcut("1", modifiers: .command)
+                    Button("") { selectedTab = 1 }
+                        .keyboardShortcut("2", modifiers: .command)
+                    Button("") { selectedTab = 2 }
+                        .keyboardShortcut("3", modifiers: .command)
+                    Button("") { selectedTab = 3 }
+                        .keyboardShortcut("4", modifiers: .command)
+                }
+                .opacity(0)
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    // MARK: - Top Bar
+
+    private var topBar: some View {
+        ZStack {
+            // Left: drop icon + name
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
+                    Text("Zen")
+                        .font(.headline)
+                }
+                Spacer()
+            }
+
+            // Center: live timer — click to go to settings timer mode
+            Button {
+                HapticService.playGeneric()
+                selectedTab = 1
+            } label: {
+                HStack(spacing: 4) {
+                    Text(appDelegate.timerService.timeRemaining.minutesAndSeconds)
+                        .font(.system(.body, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Text("/")
+                        .font(.caption)
+                        .foregroundStyle(.quaternary)
+                    Text(appDelegate.timerService.currentInterval.minutesAndSeconds)
+                        .font(.system(.caption, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+                .fixedSize()
+            }
+            .buttonStyle(.plain)
+
+            // Right: share
+            HStack {
+                Spacer()
+                ShareButton {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString("Check out Zen — a mindfulness companion for Mac\nhttps://github.com/lukashammarstrom/zen", forType: .string)
+                    HapticService.playGeneric()
+                    withAnimation(.easeOut(duration: 0.2)) { showCopiedToast = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.easeIn(duration: 0.3)) { showCopiedToast = false }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(.bar)
+    }
+}
+
+// MARK: - Share Button
+
+private struct ShareButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 11))
+                Text("Share")
+                    .font(.system(size: 12))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.1), value: isHovered)
+        .onHover { h in isHovered = h }
+        .help("Copy Zen link to share with a friend")
+    }
+}

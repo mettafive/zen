@@ -1,0 +1,21 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Generated
+Zen.xcodeproj/
+
+# Sparkle keys (never commit private keys)
+*.private-key
+
+# App Support data
+moods.json
