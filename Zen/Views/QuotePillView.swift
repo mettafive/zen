@@ -171,7 +171,12 @@ struct QuotePillView: View {
                         .font(ZenPillStyle.textFont)
                         .foregroundStyle(ZenPillStyle.textColor)
                         .lineLimit(1)
-                        .transition(.opacity)
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.animation(.easeOut(duration: 0.42)),
+                                removal: .opacity.animation(.easeIn(duration: 0.42))
+                            )
+                        )
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
