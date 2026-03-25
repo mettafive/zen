@@ -2,29 +2,35 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
         <title>Zen Updates</title>
-        <link>https://raw.githubusercontent.com/lukashammarstrom/zen/main/appcast.xml</link>
+        <link>https://raw.githubusercontent.com/mettafive/zen/main/appcast.xml</link>
         <description>Zen app updates</description>
         <language>en</language>
-        <!--
         <item>
             <title>Version 1.0.0</title>
             <sparkle:version>1.0.0</sparkle:version>
             <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-                <h2>What's New</h2>
+                <h2>Zen 1.0.0</h2>
                 <ul>
-                    <li>Initial release</li>
+                    <li>Adaptive and static mindfulness timer</li>
+                    <li>5 default moods with curated quotes and reminders</li>
+                    <li>Create, edit, and schedule your own moods</li>
+                    <li>Export and import moods to share with friends</li>
+                    <li>Screen glow and quote pills with shimmer effect</li>
+                    <li>Body awareness reminders</li>
+                    <li>Menu bar mood switching</li>
+                    <li>Haptic and sound feedback</li>
+                    <li>Presence analytics</li>
                 </ul>
             ]]></description>
-            <pubDate>Mon, 25 Mar 2026 00:00:00 +0000</pubDate>
+            <pubDate>Tue, 25 Mar 2026 19:15:00 +0100</pubDate>
             <enclosure
-                url="https://github.com/lukashammarstrom/zen/releases/download/v1.0.0/Zen-1.0.0.dmg"
+                url="https://github.com/mettafive/zen/releases/download/v1.0.0/Zen-1.0.0.dmg"
                 type="application/octet-stream"
-                sparkle:edSignature="SIGNATURE_HERE"
-                length="SIZE_HERE"
+                sparkle:edSignature="jGFA6yIGGwvRD4CGGLFfKqkTyEFz/PL8rcdXlwqcx5aFgbw38/wz4TMCaMhH0x+YXWRYPyVUaWSDRJtYZti6CQ=="
+                length="2455691"
             />
         </item>
-        -->
     </channel>
 </rss>

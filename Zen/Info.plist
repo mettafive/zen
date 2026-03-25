@@ -25,7 +25,7 @@
 	<key>SUPublicEDKey</key>
 	<string>MVCjNEzeSfbmpk8/D98TqKBWgY59JS2jECRB+K1JpfA=</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/lukashammarstrom/zen/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/mettafive/zen/main/appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUScheduledCheckInterval</key>
