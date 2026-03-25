@@ -138,13 +138,17 @@ struct QuotePillView: View {
     let text: String
     @ObservedObject var controller: QuotePillController
 
-    private var visibleText: String? {
+    private var displayText: String {
         switch controller.textPhase {
         case .quote: return text
         case .breathe: return "Take a breath, feel your body"
         case .present: return "Let's stay present"
-        case .none: return nil
+        case .none: return ""
         }
+    }
+
+    private var textVisible: Bool {
+        controller.textPhase != .none
     }
 
     var body: some View {
@@ -165,19 +169,14 @@ struct QuotePillView: View {
                     .padding(.horizontal, 32)
                     .opacity(0)
 
-                // Visible text — fades in/out
-                if let visibleText {
-                    Text(visibleText)
-                        .font(ZenPillStyle.textFont)
-                        .foregroundStyle(ZenPillStyle.textColor)
-                        .lineLimit(1)
-                        .transition(
-                            .asymmetric(
-                                insertion: .opacity.animation(.easeOut(duration: 0.42)),
-                                removal: .opacity.animation(.easeIn(duration: 0.42))
-                            )
-                        )
-                }
+                // Visible text — always rendered, opacity animated directly
+                Text(displayText)
+                    .font(ZenPillStyle.textFont)
+                    .foregroundStyle(ZenPillStyle.textColor)
+                    .lineLimit(1)
+                    .opacity(textVisible ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.42), value: textVisible)
+                    .animation(.easeInOut(duration: 0.42), value: displayText)
             }
             .fixedSize(horizontal: true, vertical: false)
             Spacer()
