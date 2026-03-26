@@ -156,11 +156,11 @@ struct AnalyticsView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 220)
 
+                        Spacer()
+
                         Text(chartMode == .byHour ? "Presence by hour of day" : "Presence rate per day")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-
-                        Spacer()
                     }
 
                     switch chartMode {

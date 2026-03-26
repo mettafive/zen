@@ -121,7 +121,7 @@ struct OnboardingView: View {
                 .font(.system(size: 22, weight: .light, design: .serif))
                 .tracking(-0.5)
 
-            Text("When the chime sounds, slide your mouse\nto the left or right edge of the screen.\nHold for 2 seconds. That's it.")
+            Text("When the chime sounds, slide your mouse\nall the way to the left or right edge.\nHold for 2 seconds. That's it.")
                 .font(.system(size: 12.5))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
