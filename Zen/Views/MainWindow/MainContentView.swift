@@ -8,6 +8,8 @@ struct MainContentView: View {
     @State private var selectedTab = 0
     @State private var linkCopied = false
     @State private var showCopiedToast = false
+    @State private var showTip = false
+    @State private var tipDismissed = false
 
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate
@@ -63,6 +65,39 @@ struct MainContentView: View {
                 }
             }
             .frame(minWidth: 500, minHeight: 400)
+            .overlay(alignment: .bottomLeading) {
+                if showTip && !tipDismissed {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Tip")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) { tipDismissed = true }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: 300)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.ultraThinMaterial)
+                            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+                    )
+                    .padding(16)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+            }
             .overlay(alignment: .bottom) {
                 if showCopiedToast {
                     Text("Link copied")
@@ -104,6 +139,16 @@ struct MainContentView: View {
                 }
                 .opacity(0)
                 .allowsHitTesting(false)
+            }
+            .task {
+                guard !UserDefaults.standard.bool(forKey: "tipShown") else { return }
+                try? await Task.sleep(for: .seconds(300)) // 5 minutes
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(true, forKey: "tipShown")
+                withAnimation(.easeOut(duration: 0.4)) { showTip = true }
+                try? await Task.sleep(for: .seconds(600)) // auto-dismiss after 10 minutes
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.4)) { tipDismissed = true }
             }
         }
     }
