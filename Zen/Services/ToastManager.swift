@@ -33,7 +33,7 @@ final class ToastManager {
 
         guard let screen = NSScreen.main else { return }
 
-        let maxPanelWidth: CGFloat = 600
+        let maxPanelWidth: CGFloat = screen.frame.width
         let panelHeight: CGFloat = 80
 
         let x = screen.frame.midX - maxPanelWidth / 2
@@ -99,6 +99,7 @@ struct BodyReminderView: View {
                 .lineLimit(1)
                 .padding(.horizontal, 20)
         }
+        .fixedSize(horizontal: true, vertical: false)
         .frame(maxWidth: .infinity)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
