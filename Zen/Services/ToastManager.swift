@@ -97,7 +97,7 @@ struct BodyReminderView: View {
                 .font(ZenPillStyle.textFont)
                 .foregroundStyle(ZenPillStyle.textColor)
                 .lineLimit(1)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 32)
         }
         .fixedSize(horizontal: true, vertical: false)
         .frame(maxWidth: .infinity)
