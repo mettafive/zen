@@ -18,6 +18,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("staticVarianceEnabled") var staticVarianceEnabled: Bool = false
     @AppStorage("staticVarianceMinutes") var staticVarianceMinutes: Double = 1
     @AppStorage("quoteOrder") var quoteOrder: String = "random" // "random" or "sequential"
+    @AppStorage("glowTheme") var glowTheme: String = "orange" // "orange" or "white"
     @AppStorage("remindersEnabled") var remindersEnabled: Bool = true
     @AppStorage("reminderIntervalMinutes") var reminderIntervalMinutes: Double = 3
     @AppStorage("staticInterval") var staticInterval: Double = 300 // 5 minutes default

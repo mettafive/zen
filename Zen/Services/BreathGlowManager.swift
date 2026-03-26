@@ -155,14 +155,20 @@ struct BreathGlowView: View {
     @State private var glowOpacity: CGFloat = 0
     @State private var breathCount = 0
 
+    private var glowColor: Color {
+        AppSettings.shared.glowTheme == "orange"
+            ? Color(red: 0.95, green: 0.63, blue: 0.21)
+            : Color.white
+    }
+
     var body: some View {
         Rectangle()
             .fill(Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 0)
-                    .stroke(Color.white, lineWidth: 110)
+                    .stroke(glowColor, lineWidth: 110)
                     .blur(radius: 42)
-                    .opacity(0.4)
+                    .opacity(AppSettings.shared.glowTheme == "orange" ? 0.35 : 0.4)
             )
             .clipped()
             .opacity(glowOpacity)

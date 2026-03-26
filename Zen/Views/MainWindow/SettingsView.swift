@@ -65,6 +65,18 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Appearance") {
+                Picker("Glow theme", selection: $settings.glowTheme) {
+                    Text("Orange").tag("orange")
+                    Text("White").tag("white")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: settings.glowTheme) { HapticService.playGeneric() }
+                Text("Changes the screen glow and quote pill colors.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Feedback") {
                 Toggle("Haptic feedback", isOn: $settings.hapticEnabled)
                     .onChange(of: settings.hapticEnabled) { HapticService.playGeneric() }

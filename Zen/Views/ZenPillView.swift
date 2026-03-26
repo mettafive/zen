@@ -2,11 +2,17 @@ import SwiftUI
 
 /// Shared pill style constants — single source of truth.
 /// Change these and it updates quote, peek, and body-reminder pills.
+@MainActor
 enum ZenPillStyle {
     static let cornerRadius: CGFloat = 14
     static let pillHeight: CGFloat = 56
     static let textFont: Font = .system(size: 13, weight: .light, design: .serif)
-    static let textColor: Color = .black.opacity(0.5)
+
+    static var isOrangeTheme: Bool { AppSettings.shared.glowTheme == "orange" }
+
+    static var textColor: Color {
+        isOrangeTheme ? .white.opacity(0.9) : .black.opacity(0.5)
+    }
 }
 
 /// Shared frosted-glass pill used by quote, peek, and body-reminder surfaces.
@@ -20,24 +26,41 @@ struct ZenPillView<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     private let cr = ZenPillStyle.cornerRadius
+    private var isOrange: Bool { ZenPillStyle.isOrangeTheme }
 
     @State private var shimmerAngle: Angle = .zero
 
-    // Black/silver spark gradient — startAngle shifts to animate
+    // Spark gradient — travels around the border
     private func sparkGradient(angle: Angle) -> AngularGradient {
-        AngularGradient(
-            stops: [
-                .init(color: .black.opacity(0.06), location: 0.0),
-                .init(color: .black.opacity(0.06), location: 0.6),
-                .init(color: .black.opacity(0.2), location: 0.7),
-                .init(color: .white.opacity(0.65), location: 0.78),
-                .init(color: .black.opacity(0.2), location: 0.86),
-                .init(color: .black.opacity(0.06), location: 0.96),
-            ],
-            center: .center,
-            startAngle: angle,
-            endAngle: angle + .degrees(360)
-        )
+        if isOrange {
+            return AngularGradient(
+                stops: [
+                    .init(color: .white.opacity(0.15), location: 0.0),
+                    .init(color: .white.opacity(0.15), location: 0.6),
+                    .init(color: .white.opacity(0.4), location: 0.7),
+                    .init(color: .white.opacity(0.9), location: 0.78),
+                    .init(color: .white.opacity(0.4), location: 0.86),
+                    .init(color: .white.opacity(0.15), location: 0.96),
+                ],
+                center: .center,
+                startAngle: angle,
+                endAngle: angle + .degrees(360)
+            )
+        } else {
+            return AngularGradient(
+                stops: [
+                    .init(color: .black.opacity(0.06), location: 0.0),
+                    .init(color: .black.opacity(0.06), location: 0.6),
+                    .init(color: .black.opacity(0.2), location: 0.7),
+                    .init(color: .white.opacity(0.65), location: 0.78),
+                    .init(color: .black.opacity(0.2), location: 0.86),
+                    .init(color: .black.opacity(0.06), location: 0.96),
+                ],
+                center: .center,
+                startAngle: angle,
+                endAngle: angle + .degrees(360)
+            )
+        }
     }
 
     // Softer glow version
@@ -46,7 +69,7 @@ struct ZenPillView<Content: View>: View {
             stops: [
                 .init(color: .clear, location: 0.0),
                 .init(color: .clear, location: 0.65),
-                .init(color: .white.opacity(0.18), location: 0.78),
+                .init(color: .white.opacity(isOrange ? 0.3 : 0.18), location: 0.78),
                 .init(color: .clear, location: 0.91),
                 .init(color: .clear, location: 1.0),
             ],
@@ -68,10 +91,13 @@ struct ZenPillView<Content: View>: View {
             // Clipped pill content
             Group {
                 RoundedRectangle(cornerRadius: cr)
-                    .fill(.ultraThinMaterial)
+                    .fill(isOrange ? .ultraThickMaterial : .ultraThinMaterial)
 
                 RoundedRectangle(cornerRadius: cr)
-                    .fill(.white.opacity(0.82))
+                    .fill(isOrange
+                        ? Color(red: 0.95, green: 0.63, blue: 0.21).opacity(0.85)
+                        : Color.white.opacity(0.82)
+                    )
 
                 content()
 
@@ -84,7 +110,7 @@ struct ZenPillView<Content: View>: View {
                         let xOffset = (totalWidth - lineWidth) / 2
 
                         RoundedRectangle(cornerRadius: 0.5)
-                            .fill(.black.opacity(0.09))
+                            .fill(isOrange ? .white.opacity(0.3) : .black.opacity(0.09))
                             .frame(width: lineWidth, height: 1.25)
                             .offset(x: xOffset)
                     }
@@ -105,7 +131,7 @@ struct ZenPillView<Content: View>: View {
                     .frame(height: ZenPillStyle.pillHeight)
             } else {
                 RoundedRectangle(cornerRadius: cr)
-                    .stroke(Color.black.opacity(0.07), lineWidth: 0.5)
+                    .stroke(isOrange ? Color.white.opacity(0.3) : Color.black.opacity(0.07), lineWidth: isOrange ? 1 : 0.5)
                     .frame(height: ZenPillStyle.pillHeight)
             }
         }
