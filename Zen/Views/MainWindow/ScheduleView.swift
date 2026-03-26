@@ -1,19 +1,38 @@
 import SwiftUI
 
+// Day starts at 04:00, ends at 04:00 next day
+private let dayStartHour = 4
+private let totalMinutesInDay = 1440
 private let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 private let blockColors: [Color] = [
-    .blue.opacity(0.6), .green.opacity(0.6), .orange.opacity(0.6),
-    .purple.opacity(0.6), .pink.opacity(0.6), .teal.opacity(0.6),
-    .indigo.opacity(0.6), .mint.opacity(0.6), .brown.opacity(0.6),
+    .blue.opacity(0.7), .green.opacity(0.7), .orange.opacity(0.7),
+    .purple.opacity(0.7), .pink.opacity(0.7), .teal.opacity(0.7),
+    .indigo.opacity(0.7), .mint.opacity(0.7), .brown.opacity(0.7),
 ]
+
+/// Convert absolute minutes (0-1440) to display position (offset by 04:00)
+private func toDisplayMinutes(_ absoluteMinutes: Int) -> Int {
+    (absoluteMinutes - dayStartHour * 60 + totalMinutesInDay) % totalMinutesInDay
+}
+
+/// Convert display position back to absolute minutes
+private func toAbsoluteMinutes(_ displayMinutes: Int) -> Int {
+    (displayMinutes + dayStartHour * 60) % totalMinutesInDay
+}
+
+/// Snap to nearest 30-minute increment
+private func snap30(_ minutes: Int) -> Int {
+    Int(round(Double(minutes) / 30.0)) * 30
+}
 
 struct ScheduleView: View {
     @ObservedObject private var store = MoodStore.shared
     @State private var selectedBlockId: String? = nil
+    @State private var errorMessage: String? = nil
+    @State private var dropPreview: (day: Int, displayStart: Int, moodIndex: Int)? = nil
 
     var body: some View {
         HStack(spacing: 0) {
-            // Timeline grid
             VStack(alignment: .leading, spacing: 0) {
                 Text("Schedule")
                     .font(.title2.weight(.medium))
@@ -22,37 +41,50 @@ struct ScheduleView: View {
                     .padding(.bottom, 12)
 
                 timelineGrid
+
+                // Error toast
+                if let error = errorMessage {
+                    HStack {
+                        Spacer()
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(.red.opacity(0.1)))
+                        Spacer()
+                    }
+                    .padding(.top, 8)
+                    .transition(.opacity)
+                }
             }
 
             Divider()
 
-            // Mood sidebar
             moodSidebar
                 .frame(width: 150)
         }
-        .onDeleteCommand {
-            deleteSelectedBlock()
-        }
+        .onDeleteCommand { deleteSelectedBlock() }
     }
 
     // MARK: - Timeline Grid
 
     private var timelineGrid: some View {
         VStack(spacing: 0) {
-            // Hour header
+            // Hour header (04, 06, 08 ... 22, 00, 02, 04)
             HStack(spacing: 0) {
                 Text("")
                     .frame(width: 50)
 
                 GeometryReader { geo in
-                    let pph = geo.size.width / 24
-                    ForEach(0..<25) { hour in
-                        if hour % 3 == 0 {
-                            Text(String(format: "%02d", hour == 24 ? 0 : hour))
-                                .font(.system(size: 9, design: .monospaced))
-                                .foregroundStyle(.tertiary)
-                                .position(x: CGFloat(hour) * pph, y: 8)
-                        }
+                    let pph = geo.size.width / 24.0
+                    ForEach(0..<13) { i in
+                        let displayHour = i * 2
+                        let actualHour = (dayStartHour + displayHour) % 24
+                        Text(String(format: "%02d", actualHour))
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .position(x: CGFloat(displayHour) * pph, y: 8)
                     }
                 }
             }
@@ -64,7 +96,13 @@ struct ScheduleView: View {
                     day: day,
                     blocks: store.allScheduleBlocks().filter { $0.day == day },
                     selectedBlockId: $selectedBlockId,
-                    store: store
+                    dropPreview: dropPreview?.day == day ? (dropPreview!.displayStart, dropPreview!.moodIndex) : nil,
+                    store: store,
+                    onDrop: { moodId, displayMinutes in handleDrop(moodId: moodId, day: day, displayMinutes: displayMinutes) },
+                    onDropPreview: { moodIndex, displayMinutes in
+                        dropPreview = (day: day, displayStart: displayMinutes, moodIndex: moodIndex)
+                    },
+                    onDropExit: { dropPreview = nil }
                 )
                 Divider()
             }
@@ -98,13 +136,72 @@ struct ScheduleView: View {
         }
     }
 
+    // MARK: - Actions
+
     private func deleteSelectedBlock() {
-        guard let blockId = selectedBlockId else { return }
-        let blocks = store.allScheduleBlocks()
-        guard let block = blocks.first(where: { $0.id == blockId }) else { return }
+        guard let blockId = selectedBlockId,
+              let block = store.allScheduleBlocks().first(where: { $0.id == blockId }) else { return }
         HapticService.playLevelChange()
         store.removeScheduleBlock(moodId: block.moodId, scheduleId: block.scheduleId, day: block.day)
         selectedBlockId = nil
+    }
+
+    private func handleDrop(moodId: UUID, day: Int, displayMinutes: Int) {
+        dropPreview = nil
+        let absStart = toAbsoluteMinutes(snap30(displayMinutes))
+        let absEnd = toAbsoluteMinutes(snap30(displayMinutes) + 60)
+
+        // Check for overlaps
+        let dayBlocks = store.allScheduleBlocks().filter { $0.day == day }
+        let conflicts = dayBlocks.filter { overlaps(aStart: absStart, aEnd: absEnd, bStart: $0.startMinutes, bEnd: $0.endMinutes) }
+
+        if conflicts.isEmpty {
+            HapticService.playGeneric()
+            store.addScheduleBlock(moodId: moodId, day: day,
+                                   startHour: absStart / 60, startMinute: absStart % 60,
+                                   endHour: absEnd / 60, endMinute: absEnd % 60)
+            return
+        }
+
+        // Try before the first conflict
+        let firstConflict = conflicts.sorted(by: { $0.startMinutes < $1.startMinutes }).first!
+        let beforeEnd = firstConflict.startMinutes
+        let beforeStart = beforeEnd - 60
+        if beforeStart >= dayStartHour * 60 &&
+           !dayBlocks.contains(where: { overlaps(aStart: beforeStart, aEnd: beforeEnd, bStart: $0.startMinutes, bEnd: $0.endMinutes) }) {
+            HapticService.playGeneric()
+            store.addScheduleBlock(moodId: moodId, day: day,
+                                   startHour: beforeStart / 60, startMinute: beforeStart % 60,
+                                   endHour: beforeEnd / 60, endMinute: beforeEnd % 60)
+            return
+        }
+
+        // Try after the last conflict
+        let lastConflict = conflicts.sorted(by: { $0.endMinutes > $1.endMinutes }).first!
+        let afterStart = lastConflict.endMinutes
+        let afterEnd = afterStart + 60
+        if afterEnd <= (dayStartHour + 24) * 60 &&
+           !dayBlocks.contains(where: { overlaps(aStart: afterStart, aEnd: afterEnd, bStart: $0.startMinutes, bEnd: $0.endMinutes) }) {
+            HapticService.playGeneric()
+            let sh = afterStart >= 1440 ? (afterStart - 1440) / 60 : afterStart / 60
+            let sm = afterStart % 60
+            let eh = afterEnd >= 1440 ? (afterEnd - 1440) / 60 : afterEnd / 60
+            let em = afterEnd % 60
+            store.addScheduleBlock(moodId: moodId, day: day,
+                                   startHour: sh, startMinute: sm,
+                                   endHour: eh, endMinute: em)
+            return
+        }
+
+        // No room
+        withAnimation(.easeOut(duration: 0.2)) { errorMessage = "No room on \(dayLabels[day - 1])" }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeIn(duration: 0.3)) { errorMessage = nil }
+        }
+    }
+
+    private func overlaps(aStart: Int, aEnd: Int, bStart: Int, bEnd: Int) -> Bool {
+        aStart < bEnd && bStart < aEnd
     }
 }
 
@@ -114,49 +211,72 @@ private struct DayRow: View {
     let day: Int
     let blocks: [MoodStore.ScheduleBlock]
     @Binding var selectedBlockId: String?
+    let dropPreview: (displayStart: Int, moodIndex: Int)?
     let store: MoodStore
+    let onDrop: (UUID, Int) -> Void
+    let onDropPreview: (Int, Int) -> Void
+    let onDropExit: () -> Void
     @State private var isTargeted = false
+    @State private var rowWidth: CGFloat = 1
 
     var body: some View {
         HStack(spacing: 0) {
-            // Day label
             Text(dayLabels[day - 1])
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 50, alignment: .leading)
 
-            // Timeline
             GeometryReader { geo in
-                let totalWidth = geo.size.width
-                let pph = totalWidth / 24
+                let pph = geo.size.width / 24.0
 
                 // Hour grid lines
                 ForEach(0..<25) { hour in
                     Rectangle()
                         .fill(Color.primary.opacity(hour % 6 == 0 ? 0.08 : 0.03))
-                        .frame(width: 1)
+                        .frame(width: 1, height: geo.size.height)
                         .position(x: CGFloat(hour) * pph, y: geo.size.height / 2)
-                        .frame(height: geo.size.height)
+                }
+
+                // Drop preview ghost
+                if let preview = dropPreview {
+                    let ghostX = CGFloat(preview.displayStart) / 60.0 * pph
+                    let ghostW = pph // 1 hour
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(blockColors[preview.moodIndex % blockColors.count].opacity(0.3))
+                        .frame(width: ghostW, height: geo.size.height - 8)
+                        .position(x: ghostX + ghostW / 2, y: geo.size.height / 2)
                 }
 
                 // Schedule blocks
                 ForEach(blocks) { block in
+                    let displayStart = toDisplayMinutes(block.startMinutes)
+                    let displayEnd = toDisplayMinutes(block.endMinutes)
+                    let duration = displayEnd > displayStart ? displayEnd - displayStart : totalMinutesInDay - displayStart + displayEnd
+                    let blockX = CGFloat(displayStart) / 60.0 * pph
+                    let blockW = max(CGFloat(duration) / 60.0 * pph, 20)
+
                     ScheduleBlockView(
                         block: block,
+                        x: blockX,
+                        width: blockW,
                         pph: pph,
                         rowHeight: geo.size.height,
                         isSelected: selectedBlockId == block.id,
                         onSelect: { selectedBlockId = block.id },
-                        onResize: { newStart, newEnd in
-                            let sh = newStart / 60
-                            let sm = newStart % 60
-                            let eh = newEnd / 60
-                            let em = newEnd % 60
+                        onMove: { newDisplayStart in
+                            let absStart = toAbsoluteMinutes(newDisplayStart)
+                            let absEnd = toAbsoluteMinutes(newDisplayStart + duration)
                             store.updateScheduleTime(
-                                moodId: block.moodId,
-                                scheduleId: block.scheduleId,
-                                startHour: sh, startMinute: sm,
-                                endHour: eh, endMinute: em
+                                moodId: block.moodId, scheduleId: block.scheduleId,
+                                startHour: absStart / 60, startMinute: absStart % 60,
+                                endHour: absEnd / 60, endMinute: absEnd % 60
+                            )
+                        },
+                        onResize: { newAbsStart, newAbsEnd in
+                            store.updateScheduleTime(
+                                moodId: block.moodId, scheduleId: block.scheduleId,
+                                startHour: newAbsStart / 60, startMinute: newAbsStart % 60,
+                                endHour: newAbsEnd / 60, endMinute: newAbsEnd % 60
                             )
                         },
                         onDelete: {
@@ -167,20 +287,19 @@ private struct DayRow: View {
                     )
                 }
             }
-            .background(isTargeted ? Color.accentColor.opacity(0.05) : Color.clear)
-            .clipShape(Rectangle())
+            .background(isTargeted ? Color.accentColor.opacity(0.04) : Color.clear)
+            .background(GeometryReader { geo in
+                Color.clear.onAppear { rowWidth = geo.size.width }
+            })
             .dropDestination(for: String.self) { items, location in
                 guard let moodIdString = items.first,
                       let moodId = UUID(uuidString: moodIdString) else { return false }
-
-                let geo = location.x
-                // Calculate hour from drop position — we'll estimate based on the view
-                // This gets refined after the drop
-                HapticService.playGeneric()
-                store.addScheduleBlock(moodId: moodId, day: day, startHour: 9, startMinute: 0, endHour: 10, endMinute: 0)
+                let displayMinutes = snap30(Int(location.x / rowWidth * 24 * 60))
+                onDrop(moodId, displayMinutes)
                 return true
             } isTargeted: { targeted in
                 isTargeted = targeted
+                if !targeted { onDropExit() }
             }
         }
         .frame(height: 44)
@@ -191,15 +310,18 @@ private struct DayRow: View {
 
 private struct ScheduleBlockView: View {
     let block: MoodStore.ScheduleBlock
+    let x: CGFloat
+    let width: CGFloat
     let pph: CGFloat
     let rowHeight: CGFloat
     let isSelected: Bool
     let onSelect: () -> Void
-    let onResize: (Int, Int) -> Void // (newStartMinutes, newEndMinutes)
+    let onMove: (Int) -> Void // newDisplayStartMinutes
+    let onResize: (Int, Int) -> Void // (newAbsStart, newAbsEnd)
     let onDelete: () -> Void
 
     @State private var isHovered = false
-    @State private var dragOffset: CGFloat = 0
+    @State private var bodyDragOffset: CGFloat = 0
     @State private var leftDragOffset: CGFloat = 0
     @State private var rightDragOffset: CGFloat = 0
 
@@ -207,13 +329,11 @@ private struct ScheduleBlockView: View {
         blockColors[block.moodIndex % blockColors.count]
     }
 
-    private var x: CGFloat { CGFloat(block.startMinutes) / 60.0 * pph }
-    private var width: CGFloat {
-        max(CGFloat(block.endMinutes - block.startMinutes) / 60.0 * pph, 20)
-    }
+    private var effectiveX: CGFloat { x + bodyDragOffset + leftDragOffset }
+    private var effectiveW: CGFloat { max(width - leftDragOffset + rightDragOffset, 20) }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             // Block body
             RoundedRectangle(cornerRadius: 5)
                 .fill(color)
@@ -226,31 +346,46 @@ private struct ScheduleBlockView: View {
             HStack(spacing: 3) {
                 Text(block.moodIcon)
                     .font(.system(size: 11))
-                if width > 60 {
+                if effectiveW > 60 {
                     Text(block.moodName)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                 }
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+
+            // Delete X on hover
+            if isHovered {
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 14, height: 14)
+                        .background(Circle().fill(Color.black.opacity(0.4)))
+                }
+                .buttonStyle(.plain)
+                .offset(x: -3, y: 3)
+                .transition(.opacity)
+            }
 
             // Resize handles
             HStack(spacing: 0) {
-                // Left handle
                 Rectangle()
                     .fill(Color.clear)
-                    .frame(width: 8)
+                    .frame(width: 10)
                     .contentShape(Rectangle())
                     .cursor(.resizeLeftRight)
                     .gesture(
                         DragGesture()
-                            .onChanged { value in
-                                leftDragOffset = value.translation.width
-                            }
-                            .onEnded { value in
-                                let deltaMinutes = Int(round(value.translation.width / pph * 60 / 30)) * 30
-                                let newStart = max(0, block.startMinutes + deltaMinutes)
+                            .onChanged { v in leftDragOffset = v.translation.width }
+                            .onEnded { v in
+                                let delta = snap30(Int(v.translation.width / pph * 60))
+                                let newStart = max(0, block.startMinutes + delta)
                                 if newStart < block.endMinutes - 29 {
                                     onResize(newStart, block.endMinutes)
                                 }
@@ -260,20 +395,17 @@ private struct ScheduleBlockView: View {
 
                 Spacer()
 
-                // Right handle
                 Rectangle()
                     .fill(Color.clear)
-                    .frame(width: 8)
+                    .frame(width: 10)
                     .contentShape(Rectangle())
                     .cursor(.resizeLeftRight)
                     .gesture(
                         DragGesture()
-                            .onChanged { value in
-                                rightDragOffset = value.translation.width
-                            }
-                            .onEnded { value in
-                                let deltaMinutes = Int(round(value.translation.width / pph * 60 / 30)) * 30
-                                let newEnd = min(1440, block.endMinutes + deltaMinutes)
+                            .onChanged { v in rightDragOffset = v.translation.width }
+                            .onEnded { v in
+                                let delta = snap30(Int(v.translation.width / pph * 60))
+                                let newEnd = min(1440, block.endMinutes + delta)
                                 if newEnd > block.startMinutes + 29 {
                                     onResize(block.startMinutes, newEnd)
                                 }
@@ -282,13 +414,23 @@ private struct ScheduleBlockView: View {
                     )
             }
         }
-        .frame(width: width + leftDragOffset + rightDragOffset, height: rowHeight - 8)
-        .offset(x: x + leftDragOffset + width / 2, y: 0)
-        .position(x: 0, y: rowHeight / 2)
-        .offset(x: x + (width + leftDragOffset + rightDragOffset) / 2)
+        .frame(width: effectiveW, height: rowHeight - 8)
+        .position(x: effectiveX + effectiveW / 2, y: rowHeight / 2)
         .opacity(isHovered ? 1.0 : 0.85)
+        .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .onTapGesture { onSelect() }
+        .gesture(
+            DragGesture()
+                .onChanged { v in bodyDragOffset = v.translation.width }
+                .onEnded { v in
+                    let delta = snap30(Int(v.translation.width / pph * 60))
+                    let displayStart = toDisplayMinutes(block.startMinutes)
+                    let newDisplayStart = max(0, min(totalMinutesInDay - 30, displayStart + delta))
+                    onMove(snap30(newDisplayStart))
+                    bodyDragOffset = 0
+                }
+        )
         .contextMenu {
             Button("Delete", role: .destructive) { onDelete() }
         }
@@ -331,11 +473,8 @@ private struct SidebarMoodItem: View {
 extension View {
     func cursor(_ cursor: NSCursor) -> some View {
         self.onHover { hovering in
-            if hovering {
-                cursor.push()
-            } else {
-                NSCursor.pop()
-            }
+            if hovering { cursor.push() }
+            else { NSCursor.pop() }
         }
     }
 }
