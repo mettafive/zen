@@ -342,25 +342,31 @@ final class MoodStore: ObservableObject {
         }
     }
 
-    /// Ensures all default moods exist. Adds missing ones, replaces
-    /// defaults whose name changed (e.g. Night → Morning) with the new version.
+    /// Version of the default mood content. Bump this to force-update
+    /// quotes and reminders for all default moods on next launch.
+    private static let defaultMoodsVersion = 2 // v1 = initial, v2 = curated quotes/reminders
+
     private func syncDefaults() {
         var changed = false
-        let existingIds = Set(moods.map(\.id))
+        let lastVersion = UserDefaults.standard.integer(forKey: "defaultMoodsVersion")
+        let needsContentUpdate = lastVersion < Self.defaultMoodsVersion
 
         for defaultMood in DefaultMoods.all {
             if let index = moods.firstIndex(where: { $0.id == defaultMood.id }) {
-                // Default exists — update name/icon/subtitle if they changed
-                // (keeps user's custom quotes/reminders untouched)
-                if moods[index].name != defaultMood.name ||
-                   moods[index].icon != defaultMood.icon ||
-                   moods[index].subtitle != defaultMood.subtitle {
+                if needsContentUpdate {
+                    // Force-update all content for default moods
                     moods[index].name = defaultMood.name
                     moods[index].icon = defaultMood.icon
                     moods[index].subtitle = defaultMood.subtitle
-                    // If user never edited quotes (count matches old default), update content too
                     moods[index].quotes = defaultMood.quotes
                     moods[index].reminders = defaultMood.reminders
+                    changed = true
+                } else if moods[index].name != defaultMood.name ||
+                          moods[index].icon != defaultMood.icon ||
+                          moods[index].subtitle != defaultMood.subtitle {
+                    moods[index].name = defaultMood.name
+                    moods[index].icon = defaultMood.icon
+                    moods[index].subtitle = defaultMood.subtitle
                     changed = true
                 }
             } else {
@@ -370,6 +376,9 @@ final class MoodStore: ObservableObject {
             }
         }
 
+        if needsContentUpdate {
+            UserDefaults.standard.set(Self.defaultMoodsVersion, forKey: "defaultMoodsVersion")
+        }
         if changed { save() }
     }
 

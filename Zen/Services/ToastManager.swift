@@ -33,14 +33,14 @@ final class ToastManager {
 
         guard let screen = NSScreen.main else { return }
 
-        let panelWidth: CGFloat = 400
-        let panelHeight: CGFloat = 80
+        let maxPanelWidth: CGFloat = 600
+        let panelHeight: CGFloat = 100
 
-        let x = screen.frame.midX - panelWidth / 2
+        let x = screen.frame.midX - maxPanelWidth / 2
         let y = screen.frame.minY + 30
 
         let panel = NSPanel(
-            contentRect: NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
+            contentRect: NSRect(x: x, y: y, width: maxPanelWidth, height: panelHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -56,7 +56,7 @@ final class ToastManager {
 
         let toast = BodyReminderView(text: text, duration: duration)
         let hosting = NSHostingView(rootView: toast)
-        hosting.frame = NSRect(origin: .zero, size: NSSize(width: panelWidth, height: panelHeight))
+        hosting.frame = NSRect(origin: .zero, size: NSSize(width: maxPanelWidth, height: panelHeight))
         panel.contentView = hosting
 
         panel.orderFrontRegardless()
@@ -91,12 +91,15 @@ struct BodyReminderView: View {
             shadowOpacity: 1.0,
             lineProgress: 0,
             lineVisible: false,
-            showShimmer: false
+            showShimmer: false,
+            pillHeight: 72
         ) {
             Text(text)
                 .font(ZenPillStyle.textFont)
                 .foregroundStyle(ZenPillStyle.textColor)
                 .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.85)
                 .padding(.horizontal, 20)
         }
         .frame(maxWidth: .infinity)

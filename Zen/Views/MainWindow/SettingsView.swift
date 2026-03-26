@@ -120,6 +120,12 @@ struct SettingsView: View {
             }
 
             Section {
+                Button("Show Onboarding") {
+                    settings.onboardingComplete = false
+                }
+            }
+
+            Section {
                 Button("Reset to Defaults") {
                     showResetConfirm = true
                 }

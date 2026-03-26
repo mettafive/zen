@@ -23,6 +23,7 @@ struct ZenPillView<Content: View>: View {
     let lineProgress: CGFloat
     let lineVisible: Bool
     let showShimmer: Bool
+    var pillHeight: CGFloat? = nil
     @ViewBuilder let content: () -> Content
 
     private let cr = ZenPillStyle.cornerRadius
@@ -120,7 +121,7 @@ struct ZenPillView<Content: View>: View {
                     .opacity(lineVisible ? 1 : 0)
                 }
             }
-            .frame(height: ZenPillStyle.pillHeight)
+            .frame(height: pillHeight ?? ZenPillStyle.pillHeight)
             .clipShape(RoundedRectangle(cornerRadius: cr))
 
             // Border shimmer — on top, not clipped
@@ -128,11 +129,11 @@ struct ZenPillView<Content: View>: View {
                 RoundedRectangle(cornerRadius: cr)
                     .inset(by: 0.5)
                     .stroke(sparkGradient(angle: shimmerAngle), lineWidth: 1)
-                    .frame(height: ZenPillStyle.pillHeight)
+                    .frame(height: pillHeight ?? ZenPillStyle.pillHeight)
             } else {
                 RoundedRectangle(cornerRadius: cr)
                     .stroke(isOrange ? Color.white.opacity(0.3) : Color.black.opacity(0.07), lineWidth: isOrange ? 1 : 0.5)
-                    .frame(height: ZenPillStyle.pillHeight)
+                    .frame(height: pillHeight ?? ZenPillStyle.pillHeight)
             }
         }
         .shadow(color: .black.opacity(0.03 * shadowOpacity), radius: 6, y: 2)
