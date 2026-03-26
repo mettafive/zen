@@ -361,7 +361,10 @@ private struct ScheduleBlockView: View {
     }
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
-    private var currentW: CGFloat { max(blockW - leftDrag + rightDrag, 20) }
+
+    // During drag: compute the exact left edge and width
+    private var liveX: CGFloat { blockX + bodyDrag.width + leftDrag }
+    private var liveW: CGFloat { max(blockW - leftDrag + rightDrag, 20) }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -376,7 +379,7 @@ private struct ScheduleBlockView: View {
             // Content — ease out while dragging
             HStack(spacing: 3) {
                 Text(block.moodIcon).font(.system(size: 11))
-                if currentW > 60 {
+                if liveW > 60 {
                     Text(block.moodName)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.white)
@@ -454,8 +457,11 @@ private struct ScheduleBlockView: View {
                     )
             }
         }
-        .frame(width: currentW, height: rowHeight - 8)
-        .offset(x: blockX + bodyDrag.width + leftDrag, y: 4 + bodyDrag.height * (abs(bodyDrag.height) > 25 ? 0.6 : 0))
+        .frame(width: liveW, height: rowHeight - 8)
+        .position(
+            x: liveX + liveW / 2,
+            y: rowHeight / 2 + (abs(bodyDrag.height) > 25 ? (bodyDrag.height - (bodyDrag.height > 0 ? 25 : -25)) * 0.6 : 0)
+        )
         .opacity(isHovered ? 1.0 : 0.85)
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
