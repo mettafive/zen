@@ -24,9 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         CrashReporter.sendPendingReport()
         setupModelContainer()
         wireServices()
-        timerService.start()
-        startBodyReminders()
-        startTopPeek()
+
+        if AppSettings.shared.onboardingComplete {
+            startAllServices()
+        }
         startHealthCheck()
 
         // Listen for wake from sleep
@@ -153,6 +154,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         } catch {
             print("[Zen] Failed to create ModelContainer: \(error)")
         }
+    }
+
+    func startAllServices() {
+        timerService.start()
+        startBodyReminders()
+        startTopPeek()
     }
 
     private func wireServices() {

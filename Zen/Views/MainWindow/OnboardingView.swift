@@ -3,6 +3,7 @@ import ServiceManagement
 
 struct OnboardingView: View {
     var onComplete: () -> Void
+    @Environment(\.appDelegate) private var appDelegate
 
     @State private var step = 0
     @State private var appeared = false
@@ -11,56 +12,41 @@ struct OnboardingView: View {
     private let totalSteps = 4
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            // Background fills entire window
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
 
-            Group {
-                switch step {
-                case 0: welcomeStep
-                case 1: timerStep
-                case 2: edgeStep
-                case 3: repeatStep
-                default: EmptyView()
-                }
-            }
-            .opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? 0 : 12)
+            VStack(spacing: 0) {
+                Spacer()
 
-            Spacer()
-
-            // Progress dots
-            HStack(spacing: 12) {
-                ForEach(0..<totalSteps, id: \.self) { i in
-                    Circle()
-                        .fill(i <= step ? Color.primary : Color.primary.opacity(0.15))
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .padding(.bottom, 10)
-
-            // Lines between dots (visual connector)
-            // Handled by spacing above
-
-            // Launch at startup checkbox (shown on last step)
-            if step == totalSteps - 1 {
-                VStack(spacing: 14) {
-                    Toggle(isOn: $launchAtLogin) {
-                        Text("Start Zen when I log in")
-                            .font(.system(size: 13))
-                    }
-                    .toggleStyle(.checkbox)
-                    .onChange(of: launchAtLogin) {
-                        setLaunchAtLogin(launchAtLogin)
+                Group {
+                    switch step {
+                    case 0: welcomeStep
+                    case 1: timerStep
+                    case 2: edgeStep
+                    case 3: repeatStep
+                    default: EmptyView()
                     }
                 }
                 .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 12)
+
+                Spacer()
+
+                // Progress dots (only for steps 0-3)
+                HStack(spacing: 12) {
+                    ForEach(0..<totalSteps, id: \.self) { i in
+                        Circle()
+                            .fill(i <= step ? Color.primary : Color.primary.opacity(0.15))
+                            .frame(width: 7, height: 7)
+                    }
+                }
                 .padding(.bottom, 30)
-            } else {
-                Spacer().frame(height: 60)
             }
         }
-        .frame(minWidth: 500, minHeight: 400)
-        .background(.ultraThinMaterial)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeOut(duration: 0.4), value: step)
     }
 
@@ -91,10 +77,10 @@ struct OnboardingView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
 
-            Text("Set your timer")
+            Text("A gentle chime")
                 .font(.system(size: 26, weight: .medium, design: .serif))
 
-            Text("A gentle chime plays at regular intervals —\na quiet invitation to check in with yourself.")
+            Text("At regular intervals, a soft sound plays —\na quiet invitation to check in with yourself.")
                 .font(.system(size: 14, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -147,27 +133,39 @@ struct OnboardingView: View {
             Text("Repeat")
                 .font(.system(size: 26, weight: .medium, design: .serif))
 
-            Text("That's all Zen does. A chime, a check-in,\nand back to your work. Over time,\nyou'll notice more and react less.")
+            Text("A chime, a check-in, and back to your work.\nOver time, you'll notice more and react less.")
                 .font(.system(size: 14, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                AppSettings.shared.onboardingComplete = true
-                onComplete()
-            } label: {
-                Text("Get Started")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(red: 0.95, green: 0.63, blue: 0.21))
-                    )
+            VStack(spacing: 16) {
+                Toggle(isOn: $launchAtLogin) {
+                    Text("Start Zen when I log in")
+                        .font(.system(size: 13))
+                }
+                .toggleStyle(.checkbox)
+                .onChange(of: launchAtLogin) {
+                    setLaunchAtLogin(launchAtLogin)
+                }
+
+                Button {
+                    AppSettings.shared.onboardingComplete = true
+                    appDelegate?.startAllServices()
+                    onComplete()
+                } label: {
+                    Text("Get Started")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color(red: 0.95, green: 0.63, blue: 0.21))
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
+            .padding(.top, 10)
         }
         .onAppear { animateIn() }
     }
