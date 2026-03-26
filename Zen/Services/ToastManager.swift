@@ -96,7 +96,9 @@ struct BodyReminderView: View {
             Text(text)
                 .font(ZenPillStyle.textFont)
                 .foregroundStyle(ZenPillStyle.textColor)
-                .lineLimit(1)
+                .lineLimit(2)
+                .minimumScaleFactor(0.9)
+                .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
         }
         .frame(maxWidth: .infinity)
