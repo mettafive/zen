@@ -57,8 +57,6 @@ struct OnboardingView: View {
 
     private var welcomeStep: some View {
         VStack(spacing: 18) {
-            tagPill("macOS App")
-
             Image(systemName: "drop.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(zenOrange)
@@ -81,8 +79,6 @@ struct OnboardingView: View {
 
     private var timerStep: some View {
         VStack(spacing: 18) {
-            tagPill("Step 1")
-
             iconCircle("timer")
 
             Text("A gentle chime")
@@ -102,8 +98,6 @@ struct OnboardingView: View {
 
     private var edgeStep: some View {
         VStack(spacing: 18) {
-            tagPill("Step 2")
-
             HStack(spacing: 36) {
                 VStack(spacing: 6) {
                     Image(systemName: "arrow.left.to.line")
@@ -140,8 +134,6 @@ struct OnboardingView: View {
 
     private var repeatStep: some View {
         VStack(spacing: 18) {
-            tagPill("Step 3")
-
             iconCircle("arrow.trianglehead.2.counterclockwise")
 
             Text("Repeat")

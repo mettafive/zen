@@ -271,7 +271,6 @@ struct ScheduleView: View {
                     switch scheduleOnboardingStep {
                     case 0:
                         VStack(spacing: 14) {
-                            schedTagPill("Schedule")
                             schedIconCircle("calendar")
                             Text("Different moods, different times")
                                 .font(.system(size: 20, weight: .light, design: .serif))
@@ -284,7 +283,6 @@ struct ScheduleView: View {
                         }
                     case 1:
                         VStack(spacing: 14) {
-                            schedTagPill("Step 1")
                             schedIconCircle("hand.draw")
                             Text("Drag and resize")
                                 .font(.system(size: 20, weight: .light, design: .serif))
@@ -297,7 +295,6 @@ struct ScheduleView: View {
                         }
                     case 2:
                         VStack(spacing: 14) {
-                            schedTagPill("Step 2")
                             schedIconCircle("doc.on.doc")
                             Text("Copy and paste")
                                 .font(.system(size: 20, weight: .light, design: .serif))
@@ -310,7 +307,6 @@ struct ScheduleView: View {
                         }
                     case 3:
                         VStack(spacing: 14) {
-                            schedTagPill("Done")
                             Image(systemName: "checkmark.circle")
                                 .font(.system(size: 20, weight: .light))
                                 .foregroundStyle(schedZenOrange)
