@@ -67,32 +67,41 @@ struct MainContentView: View {
             .frame(minWidth: 580, minHeight: 500)
             .overlay(alignment: .bottomLeading) {
                 if showTip && !tipDismissed {
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
                             Text("Tip")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.primary)
-                            Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell. (This only works if the countdown is active.)")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(3)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer()
+                            Button {
+                                withAnimation(.easeOut(duration: 0.2)) { tipDismissed = true }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 18, height: 18)
+                                    .background(
+                                        Circle()
+                                            .stroke(Color.primary.opacity(0.12), lineWidth: 0.75)
+                                    )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        Button {
-                            withAnimation(.easeOut(duration: 0.2)) { tipDismissed = true }
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
+                        Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell. (This only works if the countdown is active.)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(12)
-                    .frame(maxWidth: 300)
+                    .padding(14)
+                    .frame(maxWidth: 280)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.ultraThinMaterial)
-                            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        }
+                        .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
                     )
                     .padding(16)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
