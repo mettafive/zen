@@ -146,7 +146,7 @@ struct MainContentView: View {
                 guard !Task.isCancelled else { return }
                 UserDefaults.standard.set(true, forKey: "tipShown")
                 withAnimation(.easeOut(duration: 0.4)) { showTip = true }
-                try? await Task.sleep(for: .seconds(600)) // auto-dismiss after 10 minutes
+                try? await Task.sleep(for: .seconds(5400)) // auto-dismiss after 90 minutes
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.4)) { tipDismissed = true }
             }
@@ -177,7 +177,7 @@ struct MainContentView: View {
                         HapticService.playGeneric()
                         appDelegate.skipVote()
                     } label: {
-                        Image(systemName: "backward.end.fill")
+                        Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                             .frame(width: 24, height: 24)
