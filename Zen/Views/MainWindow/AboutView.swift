@@ -54,22 +54,29 @@ struct AboutView: View {
 
             Spacer()
 
-            VStack(spacing: 10) {
+            VStack(spacing: 16) {
                 Link(destination: URL(string: "https://wa.me/46706195510")!) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "bubble.left")
-                            .font(.system(size: 10))
+                    HStack(spacing: 8) {
+                        Image(systemName: "bubble.left.fill")
+                            .font(.system(size: 13))
                         Text("Send bug report to Lukas on WhatsApp")
-                            .font(.caption)
+                            .font(.system(size: 13))
                     }
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.primary.opacity(0.04))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.06), lineWidth: 0.5))
+                    )
                 }
 
                 Text("Made with awareness by Lukas Hammarström")
-                    .font(.caption)
-                    .foregroundStyle(.quaternary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
