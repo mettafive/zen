@@ -135,24 +135,33 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .alert("Reset to Defaults?", isPresented: $showResetConfirm) {
-            Button("Reset", role: .destructive) {
+            Button("Reset Everything", role: .destructive) {
+                // Timer & settings
                 settings.baseInterval = Constants.defaultInterval
                 settings.currentAdaptiveInterval = Constants.defaultInterval
                 settings.hapticEnabled = true
                 settings.soundEnabled = true
                 settings.isActive = true
-                settings.timerMode = "static"
+                settings.timerMode = "adaptive"
                 settings.staticInterval = 180
                 settings.staticVarianceEnabled = true
                 settings.staticVarianceMinutes = 1
                 settings.remindersEnabled = true
                 settings.reminderIntervalMinutes = 3
+                settings.glowTheme = "orange"
+                settings.quoteOrder = "random"
+                // Schedule
+                settings.scheduleEnabled = false
+                settings.inactiveBehavior = "00000000-0000-0000-0000-000000000001"
+                settings.scheduleOnboardingComplete = false
+                // Moods
+                MoodStore.shared.resetToDefaults()
+                // Timer
                 appDelegate?.timerService.resetToBase()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            let current = appDelegate?.timerService.currentInterval.minutesAndSeconds ?? "–"
-            Text("Your timer will reset from \(current) to 3:00. This cannot be undone.")
+            Text("This will revert all settings, moods, and schedules back to how it was when you first downloaded Zen. This cannot be undone.")
         }
     }
 }
