@@ -8,26 +8,23 @@ final class ToastManager {
 
     private var reminders: [String] { MoodStore.shared.activeMood.reminders }
 
-    private var recentIndices: [Int] = []
+    private var usedIndices: [Int] = []
 
     func showBodyReminder() {
         let index = nextReminderIndex()
         show(text: reminders[index], duration: 8)
     }
 
-    /// Pick a random reminder, but don't repeat any of the last 4
+    /// Pick a random reminder, cycling through all before repeating any
     private func nextReminderIndex() -> Int {
-        var available = Array(0..<reminders.count).filter { !recentIndices.contains($0) }
+        usedIndices = usedIndices.filter { $0 < reminders.count }
+        var available = Array(0..<reminders.count).filter { !usedIndices.contains($0) }
         if available.isEmpty {
-            // Safety fallback — shouldn't happen with 25 reminders and 4 recent
-            recentIndices.removeAll()
+            usedIndices.removeAll()
             available = Array(0..<reminders.count)
         }
         let index = available.randomElement()!
-        recentIndices.append(index)
-        if recentIndices.count > 4 {
-            recentIndices.removeFirst()
-        }
+        usedIndices.append(index)
         return index
     }
 

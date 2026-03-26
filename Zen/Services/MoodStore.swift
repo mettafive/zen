@@ -6,10 +6,57 @@ final class MoodStore: ObservableObject {
 
     @Published var moods: [Mood] = []
     @Published var activeMoodId: UUID = DefaultMoods.buddhaId
+    @Published var scheduleOverrideUntil: Date? = nil
+    @Published var scheduleOverrideMoodId: UUID? = nil
+    @Published var overrideTimeRemaining: String? = nil
+    private var overrideTimer: Timer?
 
-    // Sequential tracking (per session, not persisted)
-    private var quoteIndex = 0
-    private var reminderIndex = 0
+    var isOverrideActive: Bool {
+        guard let until = scheduleOverrideUntil else { return false }
+        return Date() < until
+    }
+
+    func overrideSchedule(moodId: UUID) {
+        scheduleOverrideMoodId = moodId
+        scheduleOverrideUntil = Date().addingTimeInterval(3600)
+        setActive(id: moodId)
+        startOverrideTimer()
+    }
+
+    func clearOverride() {
+        scheduleOverrideMoodId = nil
+        scheduleOverrideUntil = nil
+        overrideTimeRemaining = nil
+        overrideTimer?.invalidate()
+        overrideTimer = nil
+        checkSchedule()
+    }
+
+    private func startOverrideTimer() {
+        overrideTimer?.invalidate()
+        updateOverrideCountdown()
+        overrideTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.updateOverrideCountdown() }
+        }
+    }
+
+    private func updateOverrideCountdown() {
+        guard let until = scheduleOverrideUntil else {
+            overrideTimeRemaining = nil
+            overrideTimer?.invalidate()
+            overrideTimer = nil
+            return
+        }
+        let remaining = until.timeIntervalSinceNow
+        if remaining <= 0 {
+            clearOverride()
+        } else {
+            let m = Int(remaining) / 60
+            let s = Int(remaining) % 60
+            overrideTimeRemaining = String(format: "%02d:%02d", m, s)
+        }
+    }
+
     private var recentQuoteIndices: [Int] = []
     private var recentReminderIndices: [Int] = []
 
@@ -31,6 +78,16 @@ final class MoodStore: ObservableObject {
     }
 
     func checkSchedule() {
+        guard AppSettings.shared.scheduleEnabled else { return }
+
+        // Override takes priority — skip schedule until it expires
+        if let until = scheduleOverrideUntil {
+            if Date() < until { return }
+            // Override expired — clear it
+            scheduleOverrideMoodId = nil
+            scheduleOverrideUntil = nil
+        }
+
         let cal = Calendar.current
         let now = Date()
         let hour = cal.component(.hour, from: now)
@@ -41,11 +98,33 @@ final class MoodStore: ObservableObject {
         for mood in moods {
             for schedule in mood.schedules {
                 if schedule.containsTime(hour: hour, minute: minute, weekday: isoWeekday) {
+                    if !AppSettings.shared.isActive {
+                        AppSettings.shared.isActive = true
+                    }
                     if activeMoodId != mood.id {
                         setActive(id: mood.id)
                     }
                     return
                 }
+            }
+        }
+
+        // No schedule matched — apply inactive behavior
+        let hasAnySchedule = moods.contains { !$0.schedules.isEmpty }
+        guard hasAnySchedule else { return }
+
+        let behavior = AppSettings.shared.inactiveBehavior
+        if behavior == "pause" {
+            if AppSettings.shared.isActive {
+                AppSettings.shared.isActive = false
+            }
+        } else if let moodId = UUID(uuidString: behavior),
+                  moods.contains(where: { $0.id == moodId }) {
+            if !AppSettings.shared.isActive {
+                AppSettings.shared.isActive = true
+            }
+            if activeMoodId != moodId {
+                setActive(id: moodId)
             }
         }
     }
@@ -72,27 +151,13 @@ final class MoodStore: ObservableObject {
     func nextQuote() -> String {
         let quotes = activeMood.quotes.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
         guard !quotes.isEmpty else { return "Be present." }
-
-        if AppSettings.shared.quoteOrder == "sequential" {
-            let quote = quotes[quoteIndex % quotes.count]
-            quoteIndex += 1
-            return quote
-        } else {
-            return pickRandom(from: quotes, used: &recentQuoteIndices)
-        }
+        return pickRandom(from: quotes, used: &recentQuoteIndices)
     }
 
     func nextReminder() -> String {
         let reminders = activeMood.reminders.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
         guard !reminders.isEmpty else { return "Check in with your body." }
-
-        if AppSettings.shared.quoteOrder == "sequential" {
-            let reminder = reminders[reminderIndex % reminders.count]
-            reminderIndex += 1
-            return reminder
-        } else {
-            return pickRandom(from: reminders, used: &recentReminderIndices)
-        }
+        return pickRandom(from: reminders, used: &recentReminderIndices)
     }
 
     /// Picks a random item, tracking ALL used indices.
@@ -116,8 +181,6 @@ final class MoodStore: ObservableObject {
 
     func setActive(id: UUID) {
         activeMoodId = id
-        quoteIndex = 0
-        reminderIndex = 0
         recentQuoteIndices.removeAll()
         recentReminderIndices.removeAll()
         save()
@@ -154,8 +217,8 @@ final class MoodStore: ObservableObject {
         let moodId: UUID
         let scheduleId: UUID
         let day: Int // 1=Mon...7=Sun
-        let startMinutes: Int // 0-1440
-        let endMinutes: Int // 0-1440
+        let startMinutes: Int // absolute 0-1440
+        let endMinutes: Int // absolute, may be > startMinutes by up to 1440 (midnight crossing)
         let moodName: String
         let moodIcon: String
         let moodIndex: Int // for color assignment
@@ -168,7 +231,7 @@ final class MoodStore: ObservableObject {
                 for day in schedule.days {
                     let startMin = schedule.startHour * 60 + schedule.startMinute
                     var endMin = schedule.endHour * 60 + schedule.endMinute
-                    if endMin <= startMin { endMin = 1440 } // midnight crossing → clamp to end of day
+                    if endMin <= startMin { endMin += 1440 } // midnight crossing → preserve actual duration
                     blocks.append(ScheduleBlock(
                         id: "\(mood.id)-\(schedule.id)-\(day)",
                         moodId: mood.id,
@@ -323,8 +386,6 @@ final class MoodStore: ObservableObject {
     func resetToDefaults() {
         moods = DefaultMoods.all
         activeMoodId = DefaultMoods.buddhaId
-        quoteIndex = 0
-        reminderIndex = 0
         save()
     }
 }

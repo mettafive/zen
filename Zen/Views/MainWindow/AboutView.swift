@@ -1,81 +1,111 @@
 import SwiftUI
+import AppKit
 
 struct AboutView: View {
+    private let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    @State private var showFeedback = false
+    @State private var feedbackSubject = ""
+    @State private var feedbackMessage = ""
+
     var body: some View {
-        ScrollView {
-        VStack(spacing: 20) {
-            Spacer(minLength: 40)
+        VStack(spacing: 0) {
+            Spacer()
 
-            Image(systemName: "drop.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
+            VStack(spacing: 24) {
+                // Icon + name
+                VStack(spacing: 8) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
 
-            Text("Zen")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                    Text("Zen")
+                        .font(.title.weight(.semibold))
 
-            Text("Version 1.0")
-                .foregroundStyle(.secondary)
+                    Text("Version \(version)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
 
-            Divider()
-                .frame(width: 200)
+                Divider().frame(width: 180)
 
-            VStack(spacing: 8) {
-                Text("A gentle companion that helps you")
-                Text("stay present while you work.")
-            }
-            .multilineTextAlignment(.center)
-            .foregroundStyle(.secondary)
+                // Tagline
+                Text("A gentle companion that helps you\nstay present while you work.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
 
-            VStack(spacing: 4) {
-                Text("How it works")
-                    .font(.headline)
-                    .padding(.top, 12)
+                // How it works
+                Text("At regular intervals your screen glows and a quote appears. Drag your cursor to the left edge for present, right for not present. The timer adapts around your rhythm.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .frame(maxWidth: 360)
 
-                Text("At regular intervals, your screen glows and a quote appears.")
-                Text("Slide your mouse to the left edge for present,")
-                Text("or the right edge for not present. Hold for two seconds.")
-                Text("The timer adapts — stay present and the interval grows.")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Features")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 8)
-
-                HStack(spacing: 24) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Label("Adaptive & static timer", systemImage: "timer")
-                        Label("Mood themes with quotes", systemImage: "quote.closing")
-                        Label("Body awareness reminders", systemImage: "figure.mind.and.body")
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Label("Mood scheduling", systemImage: "calendar.badge.clock")
-                        Label("Haptic & sound feedback", systemImage: "hand.tap")
-                        Label("Presence analytics", systemImage: "chart.bar")
-                    }
+                // Features
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Adaptive & static timer", systemImage: "timer")
+                    Label("Mood themes with quotes", systemImage: "quote.closing")
+                    Label("Reminders between check-ins", systemImage: "bell")
+                    Label("Schedule by day", systemImage: "calendar")
+                    Label("Presence analytics", systemImage: "chart.bar")
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .foregroundStyle(.tertiary)
             }
 
             Spacer()
 
-            Text("Made by Lukas Hammarstr\u{00F6}m")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            VStack(spacing: 10) {
+                Button {
+                    showFeedback = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "envelope")
+                            .font(.system(size: 10))
+                        Text("Submit bug or feature request")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
 
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal)
-        .padding(.bottom, 40)
+                Text("Made with awareness by Lukas Hammarström")
+                    .font(.caption)
+                    .foregroundStyle(.quaternary)
+            }
+            .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showFeedback) {
+            FeedbackSheet(
+                subject: $feedbackSubject,
+                message: $feedbackMessage,
+                onSend: { sendFeedback() },
+                onCancel: {
+                    showFeedback = false
+                    feedbackSubject = ""
+                    feedbackMessage = ""
+                }
+            )
+        }
+    }
+
+    private func sendFeedback() {
+        let subject = feedbackSubject.trimmingCharacters(in: .whitespaces).isEmpty
+            ? "Zen Feedback"
+            : "[Zen] \(feedbackSubject.trimmingCharacters(in: .whitespaces))"
+        let body = feedbackMessage.trimmingCharacters(in: .whitespaces)
+        guard !body.isEmpty else { return }
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
+        if let url = URL(string: "mailto:lukas@mitthjarta.se?subject=\(encodedSubject)&body=\(encodedBody)") {
+            NSWorkspace.shared.open(url)
+        }
+        HapticService.playLevelChange()
+        showFeedback = false
+        feedbackSubject = ""
+        feedbackMessage = ""
     }
 }

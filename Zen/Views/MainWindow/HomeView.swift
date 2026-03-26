@@ -9,13 +9,12 @@ enum HomeDestination: Hashable {
 
 struct HomeView: View {
     @ObservedObject private var store = MoodStore.shared
+    @ObservedObject private var settings = AppSettings.shared
     @State private var importState: ImportState = .idle
     @State private var importError: String? = nil
     @State private var showImportError = false
-    @State private var showFeedback = false
-    @State private var feedbackSubject = ""
-    @State private var feedbackMessage = ""
-    @State private var feedbackSent = false
+    @State private var showOverrideSheet = false
+    @State private var pendingOverrideMood: Mood? = nil
 
     enum ImportState: Equatable {
         case idle
@@ -33,13 +32,7 @@ struct HomeView: View {
                         Text("Moods")
                             .font(.title2)
                             .fontWeight(.medium)
-
                         Spacer()
-
-                        // Import button
-                        ImportButton {
-                            openImportPanel()
-                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
@@ -49,8 +42,7 @@ struct HomeView: View {
                         ForEach(store.moods) { (mood: Mood) in
                             NavigationLink(value: HomeDestination.mood(mood.id)) {
                                 MoodCard(mood: mood, isActive: mood.id == store.activeMoodId) {
-                                    HapticService.playLevelChange()
-                                    store.setActive(id: mood.id)
+                                    handleMoodSelect(mood)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -65,25 +57,6 @@ struct HomeView: View {
                     }
                     .padding(20)
 
-                    // Feedback button
-                    HStack {
-                        Spacer()
-                        Button {
-                            HapticService.playGeneric()
-                            showFeedback = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "envelope")
-                                    .font(.system(size: 10))
-                                Text("Submit bug or feature request")
-                                    .font(.caption)
-                            }
-                            .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
-                    }
                 }
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
                     handleDrop(providers: providers)
@@ -110,41 +83,23 @@ struct HomeView: View {
             } message: {
                 Text(importError ?? "Could not import this file. Make sure it's a valid .zenmood file.")
             }
-            .sheet(isPresented: $showFeedback) {
-                FeedbackSheet(
-                    subject: $feedbackSubject,
-                    message: $feedbackMessage,
-                    onSend: { sendFeedback() },
-                    onCancel: {
-                        showFeedback = false
-                        feedbackSubject = ""
-                        feedbackMessage = ""
+            .sheet(isPresented: $showOverrideSheet) {
+                if let mood = pendingOverrideMood {
+                    OverrideExplanationSheet(mood: mood) {
+                        store.overrideSchedule(moodId: mood.id)
+                        showOverrideSheet = false
+                    } onDismiss: {
+                        showOverrideSheet = false
                     }
-                )
+                }
             }
         }
-    }
-
-    // MARK: - Feedback
-
-    private func sendFeedback() {
-        let subject = feedbackSubject.trimmingCharacters(in: .whitespaces).isEmpty
-            ? "Zen Feedback"
-            : "[Zen] \(feedbackSubject.trimmingCharacters(in: .whitespaces))"
-        let body = feedbackMessage.trimmingCharacters(in: .whitespaces)
-        guard !body.isEmpty else { return }
-
-        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
-        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
-
-        if let url = URL(string: "mailto:lukas@mitthjarta.se?subject=\(encodedSubject)&body=\(encodedBody)") {
-            NSWorkspace.shared.open(url)
+        .overlay(alignment: .bottomTrailing) {
+            LabeledActionButton(icon: "square.and.arrow.up", label: "Import mood", color: .secondary) {
+                openImportPanel()
+            }
+            .padding(20)
         }
-
-        HapticService.playLevelChange()
-        showFeedback = false
-        feedbackSubject = ""
-        feedbackMessage = ""
     }
 
     // MARK: - Import Overlay
@@ -183,6 +138,29 @@ struct HomeView: View {
     }
 
     // MARK: - Import Actions
+
+    private func handleMoodSelect(_ mood: Mood) {
+        HapticService.playLevelChange()
+
+        // Tapping active mood while override is active → clear override
+        if mood.id == store.activeMoodId && store.isOverrideActive {
+            store.clearOverride()
+            return
+        }
+
+        // Schedule is on → override flow
+        if settings.scheduleEnabled {
+            if settings.neverShowOverrideExplanation {
+                store.overrideSchedule(moodId: mood.id)
+            } else {
+                pendingOverrideMood = mood
+                showOverrideSheet = true
+            }
+            return
+        }
+
+        store.setActive(id: mood.id)
+    }
 
     private func openImportPanel() {
         HapticService.playGeneric()
@@ -314,7 +292,7 @@ private struct ImportButton: View {
 
 // MARK: - Feedback Sheet
 
-private struct FeedbackSheet: View {
+struct FeedbackSheet: View {
     @Binding var subject: String
     @Binding var message: String
     let onSend: () -> Void
@@ -503,6 +481,67 @@ struct AddMoodCard: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
+            if hovering { HapticService.playGeneric() }
         }
+    }
+}
+
+// MARK: - Override Explanation Sheet
+
+private struct OverrideExplanationSheet: View {
+    let mood: Mood
+    let onConfirm: () -> Void
+    let onDismiss: () -> Void
+
+    @AppStorage("neverShowOverrideExplanation") private var neverShowAgain = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text(mood.icon)
+                        .font(.system(size: 40))
+                    Text("Manual Override")
+                        .font(.title3.weight(.semibold))
+                }
+
+                Text("Selecting **\(mood.name)** will pause your schedule for **1 hour**.\n\nTo return to the schedule early, simply deselect this mood.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .frame(maxWidth: 320)
+
+                Toggle("Don't show this again", isOn: $neverShowAgain)
+                    .toggleStyle(.checkbox)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    onConfirm()
+                } label: {
+                    Text("I understand")
+                        .font(.body.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+            .padding(32)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24, height: 24)
+                    .background(Circle().fill(Color.primary.opacity(0.06)))
+            }
+            .buttonStyle(.plain)
+            .padding(12)
+        }
+        .frame(width: 400, height: 340)
     }
 }

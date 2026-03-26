@@ -18,6 +18,7 @@ private let emojiPalette = [
 
 struct MoodDetailView: View {
     @ObservedObject private var store = MoodStore.shared
+    @ObservedObject private var settings = AppSettings.shared
     @Environment(\.dismiss) private var dismiss
     @State private var mood: Mood
     @State private var selectedTab = 0
@@ -35,13 +36,35 @@ struct MoodDetailView: View {
     @State private var editingName = false
     @State private var editingSubtitle = false
 
+    private var quoteSoundBinding: Binding<String> {
+        Binding(
+            get: { mood.quoteSound },
+            set: { newValue in
+                mood.quoteSound = newValue
+                autoSave()
+                SoundService.shared.previewSound(id: newValue)
+            }
+        )
+    }
+
+    private var reminderSoundBinding: Binding<String> {
+        Binding(
+            get: { mood.reminderSound },
+            set: { newValue in
+                mood.reminderSound = newValue
+                autoSave()
+                SoundService.shared.previewSound(id: newValue)
+            }
+        )
+    }
+
     init(mood: Mood) {
         _mood = State(initialValue: mood)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top row: back + auto-select
+            // Top row: back + sound pickers
             HStack {
                 BackButton {
                     HapticService.playGeneric()
@@ -49,6 +72,45 @@ struct MoodDetailView: View {
                 }
 
                 Spacer()
+
+                // Sound pickers
+                if settings.soundEnabled {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Text("Quotes")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                            Picker("", selection: quoteSoundBinding) {
+                                ForEach(SoundService.quoteSounds) { sound in
+                                    Text(sound.name).tag(sound.id)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .fixedSize()
+                            .font(.system(size: 10))
+                        }
+
+                        HStack(spacing: 4) {
+                            Text("Reminders")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                            Picker("", selection: reminderSoundBinding) {
+                                ForEach(SoundService.reminderSounds) { sound in
+                                    Text(sound.name).tag(sound.id)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .fixedSize()
+                            .font(.system(size: 10))
+                        }
+                    }
+                } else {
+                    Text("Sound is off — enable it in Settings")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -106,24 +168,15 @@ struct MoodDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottomLeading) {
             if !mood.isDefault {
-                MoodActionButton(icon: "trash", color: .red) {
+                LabeledActionButton(icon: "trash", label: "Delete mood", color: .red) {
                     showDeleteConfirm = true
                 }
-                .help("Delete this mood")
                 .padding(20)
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            HStack(spacing: 10) {
-                // Share via system share sheet (WhatsApp, Messages, Mail, AirDrop, etc.)
-                ShareMoodButton(mood: mood, store: store)
-                    .help("Share this mood via WhatsApp, Messages, Mail, AirDrop...")
-
-                // Export to file
-                MoodActionButton(icon: "square.and.arrow.down", color: .secondary) {
-                    exportMood()
-                }
-                .help("Save as .zenmood file")
+            LabeledActionButton(icon: "square.and.arrow.down", label: "Export mood", color: .secondary) {
+                exportMood()
             }
             .padding(20)
         }
@@ -194,15 +247,6 @@ struct MoodDetailView: View {
                     .frame(height: 76)
                     .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.3)))
 
-                    // Cancel button
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) { editingIcon = false }
-                    } label: {
-                        Text("Cancel")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
             } else {
@@ -602,6 +646,41 @@ private struct MoodActionButton: View {
         }
         .buttonStyle(.plain)
         .opacity(isHovered ? 1.0 : 0.5)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .onHover { h in isHovered = h }
+    }
+}
+
+// MARK: - Labeled Action Button (icon + text pill)
+
+struct LabeledActionButton: View {
+    let icon: String
+    let label: String
+    let color: Color
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            HapticService.playLevelChange()
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                Text(label)
+                    .font(.system(size: 12))
+            }
+            .foregroundStyle(color)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(isHovered ? 0.08 : 0.05))
+            )
+        }
+        .buttonStyle(.plain)
+        .opacity(isHovered ? 1.0 : 0.6)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onHover { h in isHovered = h }
     }

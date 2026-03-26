@@ -7,7 +7,6 @@ final class TimerService {
     var currentInterval: TimeInterval
     var timeRemaining: TimeInterval
     var isRunning = false
-    var consecutivePresent: Int = 0
 
     var onTimerFired: (() -> Void)?
 
@@ -35,7 +34,6 @@ final class TimerService {
             self.currentInterval = interval
             self.timeRemaining = interval
         }
-        self.consecutivePresent = AppSettings.shared.consecutivePresent
     }
 
     func start() {
@@ -65,27 +63,12 @@ final class TimerService {
         }
 
         if wasPresent {
-            consecutivePresent += 1
-            if consecutivePresent >= 2 {
-                // Two in a row — earned the next level
-                currentInterval = min(
-                    currentInterval + Constants.intervalStep,
-                    Constants.maxInterval
-                )
-                consecutivePresent = 0
-            }
+            currentInterval = min(currentInterval + Constants.intervalStep, Constants.maxInterval)
         } else {
-            // Back down 15 seconds
-            currentInterval = max(
-                currentInterval - Constants.intervalStep,
-                Constants.minInterval
-            )
-            consecutivePresent = 0
+            currentInterval = max(currentInterval - Constants.intervalStep, Constants.minInterval)
         }
 
-        // Persist
         settings.currentAdaptiveInterval = currentInterval
-        settings.consecutivePresent = consecutivePresent
         resetTimer()
     }
 
@@ -101,9 +84,7 @@ final class TimerService {
 
     func resetToBase() {
         currentInterval = settings.baseInterval
-        consecutivePresent = 0
         settings.currentAdaptiveInterval = currentInterval
-        settings.consecutivePresent = 0
         resetTimer()
     }
 

@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var lastActivityDate = Date()
     private var inactivityTimer: Timer?
     private let inactivityThreshold: TimeInterval = 3 * 60 * 60 // 3 hours
+    private var healthTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         CrashReporter.install()
@@ -26,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         timerService.start()
         startBodyReminders()
         startTopPeek()
+        startHealthCheck()
 
         // Listen for wake from sleep
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -72,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // Check every 10 minutes
         inactivityTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self, !self.needsResume else { return }
+                guard let self, !self.needsResume, !self.edgePillarManager.isListening else { return }
                 let elapsed = Date().timeIntervalSince(self.lastActivityDate)
                 if elapsed >= self.inactivityThreshold {
                     self.timerService.pause()
@@ -103,6 +105,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         timerService.start()
         topPeekManager.startListening()
         scheduleNextBodyReminder()
+    }
+
+    // MARK: - Health Check
+
+    private func startHealthCheck() {
+        healthTimer = Timer.scheduledTimer(withTimeInterval: 1800, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.performHealthCheck() }
+        }
+    }
+
+    private func performHealthCheck() {
+        let settings = AppSettings.shared
+        guard !needsResume, !edgePillarManager.isListening else { return }
+
+        // Timer should be running but isn't
+        if settings.isActive && !timerService.isRunning {
+            print("[Zen] Health: timer was dead, restarting")
+            timerService.resetTimer()
+            timerService.start()
+        }
+
+        // Body reminders should be scheduled but aren't
+        if settings.remindersEnabled && settings.isActive && bodyReminderTimer == nil {
+            print("[Zen] Health: reminders were dead, restarting")
+            scheduleNextBodyReminder()
+        }
     }
 
     private func startTopPeek() {
@@ -136,8 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 return
             }
 
-            // Play zen chime + haptic
-            SoundService.shared.playDrainSound()
+            // Play mood's quote sound + haptic
+            SoundService.shared.playSound(id: MoodStore.shared.activeMood.quoteSound)
             HapticService.playLevelChange()
 
             // Screen breathes with a quote in the center
@@ -172,11 +200,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         timerService.recordPresence(wasPresent: wasPresent)
         timerService.start()
         votePending = false
+        lastActivityDate = Date()
 
         // Tell the quote pill to start its countdown
         breathGlowManager.onVoteCompleted()
 
         // Resume top peek + body reminders
+        topPeekManager.startListening()
+        scheduleNextBodyReminder()
+    }
+
+    func skipVote() {
+        edgePillarManager.stopListening()
+        breathGlowManager.dismiss()
+        timerService.resetTimer()
+        timerService.start()
+        votePending = false
+        lastActivityDate = Date()
         topPeekManager.startListening()
         scheduleNextBodyReminder()
     }
@@ -208,6 +248,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     self.scheduleNextBodyReminder()
                     return
                 }
+                SoundService.shared.playSound(id: MoodStore.shared.activeMood.reminderSound)
                 self.toastManager.showBodyReminder()
                 self.scheduleNextBodyReminder()
             }

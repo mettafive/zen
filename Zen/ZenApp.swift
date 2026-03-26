@@ -33,5 +33,6 @@ struct ZenApp: App {
             MenuBarMenu()
                 .environment(\.appDelegate, appDelegate)
         }
+        .menuBarExtraStyle(.window)
     }
 }

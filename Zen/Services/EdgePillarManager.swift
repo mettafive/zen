@@ -31,7 +31,7 @@ final class EdgePillarManager {
     private var pendingCompletion: EdgeSide? = nil
 
     // Physics constants
-    private let gravity: CGFloat = 1.8
+    private let gravity: CGFloat = 1.89
     private let completionGravityMultiplier: CGFloat = 1.25
     private var voteCompleted = false
     private let fillRate: CGFloat = 0.5 // 2s to full
@@ -191,10 +191,10 @@ final class EdgePillarManager {
         dt: CGFloat
     ) {
         if isAtEdge {
-            // Filling — speed up in the last 20%
+            // Filling — slow start, fast finish
             lingerTime = 0 // reset linger so it doesn't carry over
             prevFill = fill
-            let rate = fill >= 0.8 ? fillRate * 1.8 : fillRate
+            let rate = fill < 0.15 ? fillRate * 0.8 : fill >= 0.8 ? fillRate * 1.8 : fillRate
             fill += rate * dt
             velocity = 0
 

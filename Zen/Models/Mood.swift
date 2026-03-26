@@ -55,8 +55,10 @@ struct Mood: Identifiable, Codable, Hashable {
     var reminders: [String]
     var isDefault: Bool
     var schedules: [MoodSchedule]
+    var quoteSound: String
+    var reminderSound: String
 
-    init(id: UUID, name: String, icon: String, subtitle: String, quotes: [String], reminders: [String], isDefault: Bool, schedules: [MoodSchedule] = []) {
+    init(id: UUID, name: String, icon: String, subtitle: String, quotes: [String], reminders: [String], isDefault: Bool, schedules: [MoodSchedule] = [], quoteSound: String = "singing-bowl", reminderSound: String = "soft-tap") {
         self.id = id
         self.name = name
         self.icon = icon
@@ -65,10 +67,12 @@ struct Mood: Identifiable, Codable, Hashable {
         self.reminders = reminders
         self.isDefault = isDefault
         self.schedules = schedules
+        self.quoteSound = quoteSound
+        self.reminderSound = reminderSound
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, icon, subtitle, quotes, reminders, isDefault, schedules, schedule
+        case id, name, icon, subtitle, quotes, reminders, isDefault, schedules, schedule, quoteSound, reminderSound
     }
 
     func encode(to encoder: Encoder) throws {
@@ -81,6 +85,8 @@ struct Mood: Identifiable, Codable, Hashable {
         try container.encode(reminders, forKey: .reminders)
         try container.encode(isDefault, forKey: .isDefault)
         try container.encode(schedules, forKey: .schedules)
+        try container.encode(quoteSound, forKey: .quoteSound)
+        try container.encode(reminderSound, forKey: .reminderSound)
     }
 
     // Backward compatibility — old JSON had single `schedule` or no schedules
@@ -105,6 +111,8 @@ struct Mood: Identifiable, Codable, Hashable {
         } else {
             schedules = []
         }
+        quoteSound = (try? container.decodeIfPresent(String.self, forKey: .quoteSound)) ?? "singing-bowl"
+        reminderSound = (try? container.decodeIfPresent(String.self, forKey: .reminderSound)) ?? "soft-tap"
     }
 
     var hasActiveSchedules: Bool { !schedules.isEmpty }

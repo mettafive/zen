@@ -4,6 +4,7 @@ import AppKit
 struct MainContentView: View {
     @ObservedObject private var appDelegate: AppDelegate
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var store = MoodStore.shared
     @State private var selectedTab = 0
     @State private var linkCopied = false
     @State private var showCopiedToast = false
@@ -45,15 +46,15 @@ struct MainContentView: View {
                         }
                         .tag(2)
 
-                    AboutView()
-                        .tabItem {
-                            Label("About", systemImage: "info.circle")
-                        }
-                        .tag(3)
-
                     ScheduleView()
                         .tabItem {
                             Label("Schedule", systemImage: "calendar")
+                        }
+                        .tag(3)
+
+                    AboutView()
+                        .tabItem {
+                            Label("About", systemImage: "info.circle")
                         }
                         .tag(4)
                 }
@@ -122,12 +123,29 @@ struct MainContentView: View {
 
             // Center: pause/play + timer
             HStack(spacing: 8) {
-                PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
-                    HapticService.playGeneric()
-                    if appDelegate.timerService.isRunning {
-                        appDelegate.timerService.pause()
-                    } else {
-                        appDelegate.timerService.resume()
+                if appDelegate.edgePillarManager.isListening {
+                    // Voting in progress — show restart/skip button
+                    Button {
+                        HapticService.playGeneric()
+                        appDelegate.skipVote()
+                    } label: {
+                        Image(systemName: "backward.end.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(0.6)
+                    .help("Skip vote & restart timer")
+                } else {
+                    PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
+                        HapticService.playGeneric()
+                        if appDelegate.timerService.isRunning {
+                            appDelegate.timerService.pause()
+                        } else {
+                            appDelegate.timerService.resume()
+                        }
                     }
                 }
 
@@ -149,6 +167,12 @@ struct MainContentView: View {
                     .fixedSize()
                 }
                 .buttonStyle(.plain)
+
+                if store.isOverrideActive, let remaining = store.overrideTimeRemaining {
+                    OverridePill(remaining: remaining) {
+                        store.clearOverride()
+                    }
+                }
             }
 
             // Right: share
@@ -303,5 +327,42 @@ private struct WelcomeBackOverlay: View {
                 appeared = true
             }
         }
+    }
+}
+
+// MARK: - Override Pill
+
+private struct OverridePill: View {
+    let remaining: String
+    let onClear: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button { onClear() } label: {
+            HStack(spacing: 4) {
+                if isHovered {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 9, weight: .medium))
+                    Text("back to schedule")
+                        .font(.system(size: 10))
+                } else {
+                    Image(systemName: "clock")
+                        .font(.system(size: 9))
+                    Text(remaining)
+                        .font(.system(size: 10, design: .monospaced).monospacedDigit())
+                }
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .onHover { h in isHovered = h }
+        .help("Schedule overridden — click to resume")
     }
 }

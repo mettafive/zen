@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
     @Environment(\.appDelegate) private var appDelegate
+    @State private var showResetConfirm = false
+
     var body: some View {
         Form {
             Section("Timer Mode") {
@@ -18,14 +20,30 @@ struct SettingsView: View {
                 }
 
                 if settings.timerMode == "adaptive" {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label("Starts at 45s, grows when you stay present", systemImage: "brain")
-                        Label("+15s after 2 present · −15s on not present", systemImage: "arrow.up.arrow.down")
-                        Label("Range: 45s – 30 min", systemImage: "ruler")
-                        Label("Left edge = Present · Right edge = Not Present", systemImage: "rectangle.lefthalf.filled")
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("Starts at 5 min, adjusts with each check-in", systemImage: "brain")
+                            Label("+3s when present · −3s when not present", systemImage: "arrow.up.arrow.down")
+                            Label("Range: 45s – 30 min", systemImage: "ruler")
+                            Label("Left edge = Present · Right edge = Not Present", systemImage: "rectangle.lefthalf.filled")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text(appDelegate?.timerService.currentInterval.minutesAndSeconds ?? "–")
+                                .font(.system(.body, design: .monospaced).monospacedDigit())
+                                .foregroundStyle(.primary)
+                            Button("Reset") {
+                                appDelegate?.timerService.resetToBase()
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 } else {
                     Picker("Interval", selection: $settings.staticInterval) {
                         ForEach(1...30, id: \.self) { minute in
@@ -65,42 +83,12 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Appearance") {
-                Picker("Glow theme", selection: $settings.glowTheme) {
-                    Text("Orange").tag("orange")
-                    Text("White").tag("white")
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: settings.glowTheme) { HapticService.playGeneric() }
-                Text("Changes the screen glow and quote pill colors.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Feedback") {
-                Toggle("Haptic feedback", isOn: $settings.hapticEnabled)
-                    .onChange(of: settings.hapticEnabled) { HapticService.playGeneric() }
-                Text("A gentle tap when it's time to check in.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
+            Section("Sound") {
                 Toggle("Sound", isOn: $settings.soundEnabled)
                     .onChange(of: settings.soundEnabled) { HapticService.playGeneric() }
                 Text("Zen tones when it's time to check in.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                Toggle("Mindfulness quotes", isOn: $settings.showQuotes)
-                    .onChange(of: settings.showQuotes) { HapticService.playGeneric() }
-                Text("A quote appears after each check-in.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Picker("Quote & reminder order", selection: $settings.quoteOrder) {
-                    Text("Random").tag("random")
-                    Text("Sequential").tag("sequential")
-                }
-                .help("Random shuffles quotes. Sequential goes through them in order.")
             }
 
             Section("Reminders") {
@@ -122,35 +110,6 @@ struct SettingsView: View {
                 }
             }
 
-            Section {
-                Toggle("Active", isOn: $settings.isActive)
-                    .onChange(of: settings.isActive) { HapticService.playGeneric() }
-                Text("When disabled, no check-ins occur.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Button("Reset to Defaults") {
-                    settings.baseInterval = Constants.defaultInterval
-                    settings.currentAdaptiveInterval = Constants.defaultInterval
-                    settings.consecutivePresent = 0
-                    settings.hapticEnabled = true
-                    settings.soundEnabled = true
-                    settings.showQuotes = true
-                    settings.isActive = true
-                    settings.quoteOrder = "random"
-                    settings.timerMode = "adaptive"
-                    settings.staticInterval = 300
-                    settings.staticVarianceEnabled = false
-                    settings.staticVarianceMinutes = 1
-                    settings.remindersEnabled = true
-                    settings.reminderIntervalMinutes = 3
-                    appDelegate?.timerService.resetToBase()
-                }
-                .foregroundStyle(.red)
-            }
-
             Section("Debug") {
                 Button("Set timer to 5 seconds") {
                     guard let timer = appDelegate?.timerService else { return }
@@ -159,8 +118,35 @@ struct SettingsView: View {
                     timer.start()
                 }
             }
+
+            Section {
+                Button("Reset to Defaults") {
+                    showResetConfirm = true
+                }
+                .foregroundStyle(.red)
+            }
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .alert("Reset to Defaults?", isPresented: $showResetConfirm) {
+            Button("Reset", role: .destructive) {
+                settings.baseInterval = Constants.defaultInterval
+                settings.currentAdaptiveInterval = Constants.defaultInterval
+                settings.hapticEnabled = true
+                settings.soundEnabled = true
+                settings.isActive = true
+                settings.timerMode = "static"
+                settings.staticInterval = 180
+                settings.staticVarianceEnabled = true
+                settings.staticVarianceMinutes = 1
+                settings.remindersEnabled = true
+                settings.reminderIntervalMinutes = 3
+                appDelegate?.timerService.resetToBase()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            let current = appDelegate?.timerService.currentInterval.minutesAndSeconds ?? "–"
+            Text("Your timer will reset from \(current) to 3:00. This cannot be undone.")
+        }
     }
 }

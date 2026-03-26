@@ -297,8 +297,10 @@ struct MoodCreateView: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
             .transition(.opacity.combined(with: .scale(scale: 0.95)))
 
-            EmojiCancelButton {
-                withAnimation(.easeOut(duration: 0.2)) { showEmojiPicker = false }
+            if iconPicked {
+                EmojiCancelButton {
+                    withAnimation(.easeOut(duration: 0.2)) { showEmojiPicker = false }
+                }
             }
         }
         .onExitCommand {

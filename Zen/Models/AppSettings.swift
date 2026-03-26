@@ -14,14 +14,17 @@ final class AppSettings: ObservableObject {
     @AppStorage("onboardingComplete") var onboardingComplete: Bool = false
     @AppStorage("quoteX") var quoteX: Double = -1
     @AppStorage("quoteY") var quoteY: Double = -1
-    @AppStorage("timerMode") var timerMode: String = "adaptive" // "adaptive" or "static"
-    @AppStorage("staticVarianceEnabled") var staticVarianceEnabled: Bool = false
+    @AppStorage("timerMode") var timerMode: String = "static" // "adaptive" or "static"
+    @AppStorage("staticVarianceEnabled") var staticVarianceEnabled: Bool = true
     @AppStorage("staticVarianceMinutes") var staticVarianceMinutes: Double = 1
     @AppStorage("quoteOrder") var quoteOrder: String = "random" // "random" or "sequential"
     @AppStorage("glowTheme") var glowTheme: String = "orange" // "orange" or "white"
     @AppStorage("remindersEnabled") var remindersEnabled: Bool = true
     @AppStorage("reminderIntervalMinutes") var reminderIntervalMinutes: Double = 3
-    @AppStorage("staticInterval") var staticInterval: Double = 300 // 5 minutes default
+    @AppStorage("staticInterval") var staticInterval: Double = 180 // 3 minutes default
+    @AppStorage("inactiveBehavior") var inactiveBehavior: String = "pause" // "pause" or mood UUID
+    @AppStorage("scheduleEnabled") var scheduleEnabled: Bool = false
+    @AppStorage("neverShowOverrideExplanation") var neverShowOverrideExplanation: Bool = false
 
     private init() {}
 }
