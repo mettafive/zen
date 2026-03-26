@@ -39,7 +39,7 @@ final class EdgePillarManager {
 
     // Config
     private let edgeThreshold: CGFloat = 15
-    private let pillarWidth: CGFloat = 27
+    private let pillarWidth: CGFloat = 23
     var onVoteRecorded: ((Bool) -> Void)?
     var onEdgeEngaged: (() -> Void)?
     var onEdgeDisengaged: (() -> Void)?
@@ -191,10 +191,11 @@ final class EdgePillarManager {
         dt: CGFloat
     ) {
         if isAtEdge {
-            // Filling
+            // Filling — speed up in the last 20%
             lingerTime = 0 // reset linger so it doesn't carry over
             prevFill = fill
-            fill += fillRate * dt
+            let rate = fill >= 0.8 ? fillRate * 1.8 : fillRate
+            fill += rate * dt
             velocity = 0
 
             HapticService.handleBreathProgress(fill, previousProgress: prevFill)

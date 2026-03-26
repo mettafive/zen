@@ -33,7 +33,7 @@ class QuotePillController: ObservableObject {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
-            withAnimation(.easeOut(duration: 0.42)) {
+            withAnimation(.easeOut(duration: 0.6)) {
                 self.textPhase = .quote
             }
         }
@@ -47,23 +47,23 @@ class QuotePillController: ObservableObject {
         breathLineProgress = 0
         breathLineVisible = true
         startLineAnimation(from: 0, to: 1, duration: 3.5) {
-            withAnimation(.easeOut(duration: 0.42)) {
+            withAnimation(.easeOut(duration: 0.6)) {
                 self.textPhase = .none
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.54) {
-                withAnimation(.easeOut(duration: 0.42)) {
+                withAnimation(.easeOut(duration: 0.6)) {
                     self.textPhase = .breathe
                 }
                 self.startLineAnimation(from: 1, to: 0, duration: 2.4) {
-                    withAnimation(.easeOut(duration: 0.42)) {
+                    withAnimation(.easeOut(duration: 0.6)) {
                         self.textPhase = .none
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.54) {
-                        withAnimation(.easeOut(duration: 0.42)) {
+                        withAnimation(.easeOut(duration: 0.6)) {
                             self.textPhase = .present
                         }
                         self.startLineAnimation(from: 0, to: 1, duration: 2.4) {
-                            withAnimation(.easeOut(duration: 0.42)) {
+                            withAnimation(.easeOut(duration: 0.6)) {
                                 self.textPhase = .none
                             }
                             self.breathLineVisible = false
@@ -175,8 +175,8 @@ struct QuotePillView: View {
                     .foregroundStyle(ZenPillStyle.textColor)
                     .lineLimit(1)
                     .opacity(textVisible ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.42), value: textVisible)
-                    .animation(.easeInOut(duration: 0.42), value: displayText)
+                    .animation(.easeInOut(duration: 0.6), value: textVisible)
+                    .animation(.easeInOut(duration: 0.6), value: displayText)
             }
             .fixedSize(horizontal: true, vertical: false)
             Spacer()

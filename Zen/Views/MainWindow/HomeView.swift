@@ -394,6 +394,9 @@ struct MoodCard: View {
                     }
                     .buttonStyle(.plain)
                     .transition(.opacity)
+                    .onHover { h in
+                        if h { HapticService.playGeneric() }
+                    }
                 }
             }
 

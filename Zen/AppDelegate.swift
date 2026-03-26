@@ -203,6 +203,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     self.scheduleNextBodyReminder()
                     return
                 }
+                // Don't show reminders within 20s of the next check-in
+                if self.timerService.isRunning && self.timerService.timeRemaining <= 20 {
+                    self.scheduleNextBodyReminder()
+                    return
+                }
                 self.toastManager.showBodyReminder()
                 self.scheduleNextBodyReminder()
             }
