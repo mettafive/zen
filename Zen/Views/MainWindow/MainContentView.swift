@@ -77,12 +77,14 @@ struct MainContentView: View {
                                 withAnimation(.easeOut(duration: 0.2)) { tipDismissed = true }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 8, weight: .semibold))
+                                    .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(.tertiary)
-                                    .frame(width: 18, height: 18)
+                                    .frame(width: 24, height: 24)
+                                    .contentShape(Rectangle())
                                     .background(
                                         Circle()
                                             .stroke(Color.primary.opacity(0.12), lineWidth: 0.75)
+                                            .frame(width: 20, height: 20)
                                     )
                             }
                             .buttonStyle(.plain)
