@@ -13,7 +13,6 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Background fills entire window
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
@@ -31,38 +30,41 @@ struct OnboardingView: View {
                     }
                 }
                 .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 12)
+                .offset(y: appeared ? 0 : 8)
 
                 Spacer()
 
-                // Progress dots (only for steps 0-3)
-                HStack(spacing: 12) {
+                // Clickable progress dots
+                HStack(spacing: 14) {
                     ForEach(0..<totalSteps, id: \.self) { i in
                         Circle()
-                            .fill(i <= step ? Color.primary : Color.primary.opacity(0.15))
-                            .frame(width: 7, height: 7)
+                            .fill(i == step ? Color.primary.opacity(0.7) : Color.primary.opacity(0.12))
+                            .frame(width: i == step ? 7 : 6, height: i == step ? 7 : 6)
+                            .animation(.easeInOut(duration: 0.3), value: step)
+                            .onTapGesture {
+                                goToStep(i)
+                            }
                     }
                 }
                 .padding(.bottom, 30)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.easeOut(duration: 0.4), value: step)
     }
 
     // MARK: - Steps
 
     private var welcomeStep: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Image(systemName: "drop.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 36))
                 .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
 
             Text("Welcome to Zen")
-                .font(.system(size: 26, weight: .medium, design: .serif))
+                .font(.system(size: 22, weight: .medium, design: .serif))
 
             Text("A mindfulness companion that sits\nquietly with you while you work.")
-                .font(.system(size: 14, design: .serif))
+                .font(.system(size: 12.5, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -72,16 +74,16 @@ struct OnboardingView: View {
     }
 
     private var timerStep: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Image(systemName: "timer")
-                .font(.system(size: 44))
+                .font(.system(size: 32))
                 .foregroundStyle(.secondary)
 
             Text("A gentle chime")
-                .font(.system(size: 26, weight: .medium, design: .serif))
+                .font(.system(size: 22, weight: .medium, design: .serif))
 
             Text("At regular intervals, a soft sound plays —\na quiet invitation to check in with yourself.")
-                .font(.system(size: 14, design: .serif))
+                .font(.system(size: 12.5, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -91,31 +93,31 @@ struct OnboardingView: View {
     }
 
     private var edgeStep: some View {
-        VStack(spacing: 20) {
-            HStack(spacing: 40) {
-                VStack(spacing: 8) {
+        VStack(spacing: 16) {
+            HStack(spacing: 32) {
+                VStack(spacing: 6) {
                     Image(systemName: "arrow.left.to.line")
-                        .font(.system(size: 28))
+                        .font(.system(size: 22))
                         .foregroundStyle(.blue)
                     Text("Present")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.blue)
                 }
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Image(systemName: "arrow.right.to.line")
-                        .font(.system(size: 28))
+                        .font(.system(size: 22))
                         .foregroundStyle(.red)
                     Text("Not present")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.red)
                 }
             }
 
             Text("Hover your mouse")
-                .font(.system(size: 26, weight: .medium, design: .serif))
+                .font(.system(size: 22, weight: .medium, design: .serif))
 
             Text("When the chime sounds, slide your mouse\nto the left or right edge of the screen.\nHold for 2 seconds. That's it.")
-                .font(.system(size: 14, design: .serif))
+                .font(.system(size: 12.5, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -125,23 +127,23 @@ struct OnboardingView: View {
     }
 
     private var repeatStep: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Image(systemName: "arrow.trianglehead.2.counterclockwise")
-                .font(.system(size: 44))
+                .font(.system(size: 32))
                 .foregroundStyle(.secondary)
 
             Text("Repeat")
-                .font(.system(size: 26, weight: .medium, design: .serif))
+                .font(.system(size: 22, weight: .medium, design: .serif))
 
             Text("A chime, a check-in, and back to your work.\nOver time, you'll notice more and react less.")
-                .font(.system(size: 14, design: .serif))
+                .font(.system(size: 12.5, design: .serif))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 Toggle(isOn: $launchAtLogin) {
                     Text("Start Zen when I log in")
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                 }
                 .toggleStyle(.checkbox)
                 .onChange(of: launchAtLogin) {
@@ -154,18 +156,18 @@ struct OnboardingView: View {
                     onComplete()
                 } label: {
                     Text("Get Started")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 9)
                         .background(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(Color(red: 0.95, green: 0.63, blue: 0.21))
                         )
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.top, 10)
+            .padding(.top, 6)
         }
         .onAppear { animateIn() }
     }
@@ -174,28 +176,35 @@ struct OnboardingView: View {
 
     private func nextButton(_ title: String) -> some View {
         Button {
-            appeared = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                step += 1
-            }
+            goToStep(step + 1)
         } label: {
             Text(title)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 28)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 9)
                 .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.08))
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.06))
                 )
         }
         .buttonStyle(.plain)
-        .padding(.top, 6)
+        .padding(.top, 4)
+    }
+
+    private func goToStep(_ newStep: Int) {
+        guard newStep >= 0 && newStep < totalSteps && newStep != step else { return }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            appeared = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            step = newStep
+        }
     }
 
     private func animateIn() {
         appeared = false
-        withAnimation(.easeOut(duration: 0.4).delay(0.05)) {
+        withAnimation(.easeInOut(duration: 0.5).delay(0.15)) {
             appeared = true
         }
     }

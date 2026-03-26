@@ -194,49 +194,47 @@ struct AnalyticsView: View {
                     .frame(height: 150)
                     .frame(maxWidth: .infinity)
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    Chart(hourData) { hour in
-                        BarMark(
-                            x: .value("Hour", String(format: "%02d", hour.hour)),
-                            y: .value("Rate", hour.totalCount > 0 ? hour.presenceRate : 0)
-                        )
-                        .foregroundStyle(barColor(for: hour))
-                        .cornerRadius(3)
-                        .annotation(position: .top, spacing: 2) {
-                            if hour.totalCount > 0 {
-                                Text("\(Int(hour.presenceRate * 100))")
-                                    .font(.system(size: 8, design: .monospaced))
-                                    .foregroundStyle(.tertiary)
-                            }
+                Chart(hourData) { hour in
+                    BarMark(
+                        x: .value("Hour", String(format: "%02d", hour.hour)),
+                        y: .value("Rate", hour.totalCount > 0 ? hour.presenceRate : 0)
+                    )
+                    .foregroundStyle(barColor(for: hour))
+                    .cornerRadius(3)
+                    .annotation(position: .top, spacing: 2) {
+                        if hour.totalCount > 0 {
+                            Text("\(Int(hour.presenceRate * 100))")
+                                .font(.system(size: 8, design: .monospaced))
+                                .foregroundStyle(.tertiary)
                         }
                     }
-                    .chartYAxis {
-                        AxisMarks(values: [0, 0.5, 1.0]) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
-                            AxisValueLabel {
-                                if let v = value.as(Double.self) {
-                                    Text("\(Int(v * 100))%")
-                                        .font(.system(size: 9))
-                                }
-                            }
-                        }
-                    }
-                    .chartYScale(domain: 0...1)
-                    .chartXAxis {
-                        AxisMarks { value in
-                            AxisValueLabel()
-                                .font(.system(size: 9, design: .monospaced))
-                        }
-                    }
-                    .frame(width: max(500, CGFloat(hourData.filter { $0.totalCount > 0 }.count) * 32), height: 200)
                 }
+                .chartYAxis {
+                    AxisMarks(values: [0, 0.5, 1.0]) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
+                        AxisValueLabel {
+                            if let v = value.as(Double.self) {
+                                Text("\(Int(v * 100))%")
+                                    .font(.system(size: 9))
+                            }
+                        }
+                    }
+                }
+                .chartYScale(domain: 0...1)
+                .chartXAxis {
+                    AxisMarks { value in
+                        AxisValueLabel()
+                            .font(.system(size: 9, design: .monospaced))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
 
                 // Legend
                 HStack(spacing: 16) {
                     legendDot(color: .green, label: "70%+")
                     legendDot(color: .orange, label: "40-70%")
                     legendDot(color: .red, label: "<40%")
-                    legendDot(color: .primary.opacity(0.08), label: "no data")
                 }
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)

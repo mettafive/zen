@@ -262,54 +262,54 @@ struct ScheduleView: View {
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Group {
                     switch scheduleOnboardingStep {
                     case 0:
-                        VStack(spacing: 14) {
+                        VStack(spacing: 12) {
                             Image(systemName: "calendar")
-                                .font(.system(size: 36))
+                                .font(.system(size: 30))
                                 .foregroundStyle(.secondary)
                             Text("Schedule")
-                                .font(.system(size: 22, weight: .medium, design: .serif))
+                                .font(.system(size: 20, weight: .medium, design: .serif))
                             Text("Set different moods for different\ntimes of day and days of the week.")
-                                .font(.system(size: 13, design: .serif))
+                                .font(.system(size: 12, design: .serif))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                     case 1:
-                        VStack(spacing: 14) {
+                        VStack(spacing: 12) {
                             Image(systemName: "hand.draw")
-                                .font(.system(size: 36))
+                                .font(.system(size: 30))
                                 .foregroundStyle(.secondary)
                             Text("Drag and resize")
-                                .font(.system(size: 22, weight: .medium, design: .serif))
+                                .font(.system(size: 20, weight: .medium, design: .serif))
                             Text("Drag a mood from the sidebar into\nthe calendar. Resize by dragging the edges.")
-                                .font(.system(size: 13, design: .serif))
+                                .font(.system(size: 12, design: .serif))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                     case 2:
-                        VStack(spacing: 14) {
+                        VStack(spacing: 12) {
                             Image(systemName: "doc.on.doc")
-                                .font(.system(size: 36))
+                                .font(.system(size: 30))
                                 .foregroundStyle(.secondary)
                             Text("Copy and paste")
-                                .font(.system(size: 22, weight: .medium, design: .serif))
-                            Text("Right-click a day to copy all blocks.\nPaste onto another day to duplicate.")
-                                .font(.system(size: 13, design: .serif))
+                                .font(.system(size: 20, weight: .medium, design: .serif))
+                            Text("Use the copy button on each day row\nto duplicate blocks to another day.")
+                                .font(.system(size: 12, design: .serif))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                     case 3:
-                        VStack(spacing: 14) {
+                        VStack(spacing: 12) {
                             Image(systemName: "checkmark.circle")
-                                .font(.system(size: 36))
+                                .font(.system(size: 30))
                                 .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
                             Text("That's it")
-                                .font(.system(size: 22, weight: .medium, design: .serif))
+                                .font(.system(size: 20, weight: .medium, design: .serif))
                             Text("Enable the toggle above when\nyou're ready. Zen handles the rest.")
-                                .font(.system(size: 13, design: .serif))
+                                .font(.system(size: 12, design: .serif))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
@@ -320,16 +320,16 @@ struct ScheduleView: View {
                 // Next / Done button
                 if scheduleOnboardingStep < 3 {
                     Button {
-                        withAnimation(.easeOut(duration: 0.3)) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
                             scheduleOnboardingStep += 1
                         }
                     } label: {
                         Text("Next")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.primary)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.08)))
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 7)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.06)))
                     }
                     .buttonStyle(.plain)
                 } else {
@@ -339,10 +339,10 @@ struct ScheduleView: View {
                         }
                     } label: {
                         Text("Got it")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 7)
                             .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.95, green: 0.63, blue: 0.21)))
                     }
                     .buttonStyle(.plain)
@@ -352,21 +352,12 @@ struct ScheduleView: View {
                 HStack(spacing: 10) {
                     ForEach(0..<4, id: \.self) { i in
                         Circle()
-                            .fill(i <= scheduleOnboardingStep ? Color.primary : Color.primary.opacity(0.15))
-                            .frame(width: 6, height: 6)
+                            .fill(i == scheduleOnboardingStep ? Color.primary.opacity(0.7) : Color.primary.opacity(0.12))
+                            .frame(width: i == scheduleOnboardingStep ? 6 : 5, height: i == scheduleOnboardingStep ? 6 : 5)
+                            .animation(.easeInOut(duration: 0.3), value: scheduleOnboardingStep)
                     }
                 }
-                .padding(.top, 4)
-
-                // Don't show again
-                Button {
-                    settings.scheduleOnboardingComplete = true
-                } label: {
-                    Text("don't show again")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.quaternary)
-                }
-                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
         }
         .transition(.opacity)
