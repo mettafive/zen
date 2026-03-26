@@ -79,6 +79,18 @@ struct AboutView: View {
             .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .bottomLeading) {
+            Link(destination: URL(string: "https://mettafive.github.io/zen/")!) {
+                HStack(spacing: 5) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 11))
+                    Text("Visit Zen website")
+                        .font(.system(size: 12))
+                }
+                .foregroundStyle(.tertiary)
+            }
+            .padding(20)
+        }
     }
 
 }
