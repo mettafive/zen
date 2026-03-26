@@ -91,6 +91,9 @@ struct HomeView: View {
                     } onDismiss: {
                         showOverrideSheet = false
                     }
+                } else {
+                    // Safety: dismiss if no mood pending
+                    Color.clear.onAppear { showOverrideSheet = false }
                 }
             }
         }
