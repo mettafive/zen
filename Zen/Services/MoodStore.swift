@@ -70,7 +70,7 @@ final class MoodStore: ObservableObject {
     // MARK: - Quote & Reminder delivery
 
     func nextQuote() -> String {
-        let quotes = activeMood.quotes
+        let quotes = activeMood.quotes.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
         guard !quotes.isEmpty else { return "Be present." }
 
         if AppSettings.shared.quoteOrder == "sequential" {
@@ -78,12 +78,12 @@ final class MoodStore: ObservableObject {
             quoteIndex += 1
             return quote
         } else {
-            return pickRandom(from: quotes, recent: &recentQuoteIndices, recentLimit: min(4, quotes.count - 1))
+            return pickRandom(from: quotes, used: &recentQuoteIndices)
         }
     }
 
     func nextReminder() -> String {
-        let reminders = activeMood.reminders
+        let reminders = activeMood.reminders.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
         guard !reminders.isEmpty else { return "Check in with your body." }
 
         if AppSettings.shared.quoteOrder == "sequential" {
@@ -91,19 +91,24 @@ final class MoodStore: ObservableObject {
             reminderIndex += 1
             return reminder
         } else {
-            return pickRandom(from: reminders, recent: &recentReminderIndices, recentLimit: min(4, reminders.count - 1))
+            return pickRandom(from: reminders, used: &recentReminderIndices)
         }
     }
 
-    private func pickRandom(from items: [String], recent: inout [Int], recentLimit: Int) -> String {
-        var available = Array(0..<items.count).filter { !recent.contains($0) }
+    /// Picks a random item, tracking ALL used indices.
+    /// Only resets once every item has been shown — guarantees full rotation.
+    private func pickRandom(from items: [String], used: inout [Int]) -> String {
+        // Filter out stale indices (in case items were deleted)
+        used = used.filter { $0 < items.count }
+
+        var available = Array(0..<items.count).filter { !used.contains($0) }
         if available.isEmpty {
-            recent.removeAll()
+            // Every item has been shown — start a new cycle
+            used.removeAll()
             available = Array(0..<items.count)
         }
         let index = available.randomElement()!
-        recent.append(index)
-        if recent.count > recentLimit { recent.removeFirst() }
+        used.append(index)
         return items[index]
     }
 
@@ -125,7 +130,10 @@ final class MoodStore: ObservableObject {
 
     func updateMood(_ mood: Mood) {
         guard let index = moods.firstIndex(where: { $0.id == mood.id }) else { return }
-        moods[index] = mood
+        var cleaned = mood
+        cleaned.quotes = mood.quotes.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
+        cleaned.reminders = mood.reminders.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
+        moods[index] = cleaned
         save()
     }
 
@@ -135,6 +143,76 @@ final class MoodStore: ObservableObject {
         if activeMoodId == id {
             activeMoodId = DefaultMoods.buddhaId
         }
+        save()
+    }
+
+    // MARK: - Schedule helpers
+
+    /// A flattened block representing one mood's schedule on one specific day
+    struct ScheduleBlock: Identifiable {
+        let id: String // "\(moodId)-\(scheduleId)-\(day)"
+        let moodId: UUID
+        let scheduleId: UUID
+        let day: Int // 1=Mon...7=Sun
+        let startMinutes: Int // 0-1440
+        let endMinutes: Int // 0-1440
+        let moodName: String
+        let moodIcon: String
+        let moodIndex: Int // for color assignment
+    }
+
+    func allScheduleBlocks() -> [ScheduleBlock] {
+        var blocks: [ScheduleBlock] = []
+        for (moodIdx, mood) in moods.enumerated() {
+            for schedule in mood.schedules {
+                for day in schedule.days {
+                    let startMin = schedule.startHour * 60 + schedule.startMinute
+                    var endMin = schedule.endHour * 60 + schedule.endMinute
+                    if endMin <= startMin { endMin = 1440 } // midnight crossing → clamp to end of day
+                    blocks.append(ScheduleBlock(
+                        id: "\(mood.id)-\(schedule.id)-\(day)",
+                        moodId: mood.id,
+                        scheduleId: schedule.id,
+                        day: day,
+                        startMinutes: startMin,
+                        endMinutes: endMin,
+                        moodName: mood.name,
+                        moodIcon: mood.icon,
+                        moodIndex: moodIdx
+                    ))
+                }
+            }
+        }
+        return blocks
+    }
+
+    func addScheduleBlock(moodId: UUID, day: Int, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int) {
+        guard let index = moods.firstIndex(where: { $0.id == moodId }) else { return }
+        // Check if mood already has a schedule that includes this day with similar times
+        var schedule = MoodSchedule(id: UUID(), startHour: startHour, startMinute: startMinute, endHour: endHour, endMinute: endMinute, days: [day])
+        moods[index].schedules.append(schedule)
+        save()
+    }
+
+    func removeScheduleBlock(moodId: UUID, scheduleId: UUID, day: Int) {
+        guard let moodIdx = moods.firstIndex(where: { $0.id == moodId }) else { return }
+        guard let schedIdx = moods[moodIdx].schedules.firstIndex(where: { $0.id == scheduleId }) else { return }
+
+        moods[moodIdx].schedules[schedIdx].days.remove(day)
+        // If no days left, remove the schedule entirely
+        if moods[moodIdx].schedules[schedIdx].days.isEmpty {
+            moods[moodIdx].schedules.remove(at: schedIdx)
+        }
+        save()
+    }
+
+    func updateScheduleTime(moodId: UUID, scheduleId: UUID, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int) {
+        guard let moodIdx = moods.firstIndex(where: { $0.id == moodId }) else { return }
+        guard let schedIdx = moods[moodIdx].schedules.firstIndex(where: { $0.id == scheduleId }) else { return }
+        moods[moodIdx].schedules[schedIdx].startHour = startHour
+        moods[moodIdx].schedules[schedIdx].startMinute = startMinute
+        moods[moodIdx].schedules[schedIdx].endHour = endHour
+        moods[moodIdx].schedules[schedIdx].endMinute = endMinute
         save()
     }
 
@@ -183,14 +261,53 @@ final class MoodStore: ObservableObject {
         do {
             let data = try Data(contentsOf: fileURL)
             let stored = try JSONDecoder().decode(StoredData.self, from: data)
-            moods = stored.moods
+            moods = stored.moods.map { mood in
+                var m = mood
+                m.quotes = mood.quotes.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
+                m.reminders = mood.reminders.filter { $0.trimmingCharacters(in: .whitespaces).count > 2 }
+                return m
+            }
             activeMoodId = stored.activeMoodId
+
+            // Sync defaults — add missing, replace renamed/removed ones
+            syncDefaults()
         } catch {
             print("[Zen] Failed to load moods: \(error). Using defaults.")
             moods = DefaultMoods.all
             activeMoodId = DefaultMoods.buddhaId
             save()
         }
+    }
+
+    /// Ensures all default moods exist. Adds missing ones, replaces
+    /// defaults whose name changed (e.g. Night → Morning) with the new version.
+    private func syncDefaults() {
+        var changed = false
+        let existingIds = Set(moods.map(\.id))
+
+        for defaultMood in DefaultMoods.all {
+            if let index = moods.firstIndex(where: { $0.id == defaultMood.id }) {
+                // Default exists — update name/icon/subtitle if they changed
+                // (keeps user's custom quotes/reminders untouched)
+                if moods[index].name != defaultMood.name ||
+                   moods[index].icon != defaultMood.icon ||
+                   moods[index].subtitle != defaultMood.subtitle {
+                    moods[index].name = defaultMood.name
+                    moods[index].icon = defaultMood.icon
+                    moods[index].subtitle = defaultMood.subtitle
+                    // If user never edited quotes (count matches old default), update content too
+                    moods[index].quotes = defaultMood.quotes
+                    moods[index].reminders = defaultMood.reminders
+                    changed = true
+                }
+            } else {
+                // Missing default — add it
+                moods.append(defaultMood)
+                changed = true
+            }
+        }
+
+        if changed { save() }
     }
 
     func save() {

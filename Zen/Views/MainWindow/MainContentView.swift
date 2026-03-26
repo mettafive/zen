@@ -50,6 +50,12 @@ struct MainContentView: View {
                             Label("About", systemImage: "info.circle")
                         }
                         .tag(3)
+
+                    ScheduleView()
+                        .tabItem {
+                            Label("Schedule", systemImage: "calendar")
+                        }
+                        .tag(4)
                 }
             }
             .frame(minWidth: 500, minHeight: 400)
@@ -89,6 +95,8 @@ struct MainContentView: View {
                         .keyboardShortcut("3", modifiers: .command)
                     Button("") { selectedTab = 3 }
                         .keyboardShortcut("4", modifiers: .command)
+                    Button("") { selectedTab = 4 }
+                        .keyboardShortcut("5", modifiers: .command)
                 }
                 .opacity(0)
                 .allowsHitTesting(false)

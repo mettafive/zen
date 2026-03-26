@@ -30,7 +30,8 @@ struct MoodDetailView: View {
     // Header editing states
     @State private var editingIcon = false
     @State private var iconHovered = false
-    @State private var showSchedulePopover = false
+    @FocusState private var nameFocused: Bool
+    @FocusState private var subtitleFocused: Bool
     @State private var editingName = false
     @State private var editingSubtitle = false
 
@@ -48,15 +49,6 @@ struct MoodDetailView: View {
                 }
 
                 Spacer()
-
-                ScheduleButton(count: mood.schedules.count) {
-                    HapticService.playGeneric()
-                    showSchedulePopover.toggle()
-                }
-                .popover(isPresented: $showSchedulePopover, arrowEdge: .top) {
-                    SchedulePopover(mood: $mood, store: store, onSave: { autoSave() })
-                        .frame(width: 360)
-                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
@@ -122,10 +114,17 @@ struct MoodDetailView: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            MoodActionButton(icon: "square.and.arrow.up", color: .secondary) {
-                exportMood()
+            HStack(spacing: 10) {
+                // Share via system share sheet (WhatsApp, Messages, Mail, AirDrop, etc.)
+                ShareMoodButton(mood: mood, store: store)
+                    .help("Share this mood via WhatsApp, Messages, Mail, AirDrop...")
+
+                // Export to file
+                MoodActionButton(icon: "square.and.arrow.down", color: .secondary) {
+                    exportMood()
+                }
+                .help("Save as .zenmood file")
             }
-            .help("Save this mood to send to a friend — they can import it into their Zen app")
             .padding(20)
         }
         .navigationTitle("")
@@ -240,6 +239,21 @@ struct MoodDetailView: View {
                         .font(.title2.weight(.semibold))
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.plain)
+                        .focused($nameFocused)
+                        .onAppear {
+                            let saved = mood.name
+                            mood.name = ""
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                nameFocused = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                                    mood.name = saved
+                                }
+                            }
+                        }
+                        .onSubmit {
+                            editingName = false
+                            autoSave()
+                        }
                     Button {
                         editingName = false
                         autoSave()
@@ -265,6 +279,21 @@ struct MoodDetailView: View {
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.plain)
                         .foregroundStyle(.secondary)
+                        .focused($subtitleFocused)
+                        .onAppear {
+                            let saved = mood.subtitle
+                            mood.subtitle = ""
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                subtitleFocused = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                                    mood.subtitle = saved
+                                }
+                            }
+                        }
+                        .onSubmit {
+                            editingSubtitle = false
+                            autoSave()
+                        }
                     Button {
                         editingSubtitle = false
                         autoSave()
@@ -472,42 +501,54 @@ struct MoodDetailView: View {
     }
 }
 
-// MARK: - Schedule Button
+// MARK: - Share Mood Button (native share sheet)
 
-private struct ScheduleButton: View {
-    let count: Int
-    let action: () -> Void
+private struct ShareMoodButton: View {
+    let mood: Mood
+    let store: MoodStore
     @State private var isHovered = false
+    @State private var shareURL: URL?
 
     var body: some View {
-        Button {
-            action()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 13))
-                Text("Schedule")
-                    .font(.body)
-                if count > 0 {
-                    Text("(\(count))")
-                        .font(.caption2)
-                        .foregroundStyle(.blue)
+        Group {
+            if let url = shareURL {
+                ShareLink(
+                    item: url,
+                    subject: Text("\(mood.icon) \(mood.name)"),
+                    message: Text("Check out my Zen mood — \(mood.name). It has \(mood.quotes.count) quotes and \(mood.reminders.count) reminders. Open it with the Zen app!")
+                ) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.primary.opacity(0.06)))
                 }
+                .buttonStyle(.plain)
+                .opacity(isHovered ? 1.0 : 0.5)
+                .animation(.easeInOut(duration: 0.15), value: isHovered)
+                .onHover { h in isHovered = h }
+            } else {
+                MoodActionButton(icon: "square.and.arrow.up", color: .secondary) {
+                    // Fallback — shouldn't happen
+                }
+                .opacity(0.3)
             }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .animation(.easeOut(duration: 0.1), value: isHovered)
-        .onHover { h in isHovered = h }
+        .onAppear { prepareMoodFile() }
+        .onChange(of: mood.quotes.count) { prepareMoodFile() }
+        .onChange(of: mood.reminders.count) { prepareMoodFile() }
+        .onChange(of: mood.name) { prepareMoodFile() }
+    }
+
+    private func prepareMoodFile() {
+        let data = store.exportMood(mood)
+        let safeName = mood.name.replacingOccurrences(of: " ", with: "-")
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(safeName).zenmood")
+        try? data.write(to: tempURL)
+        shareURL = tempURL
     }
 }
+
 
 // MARK: - Back Button
 
@@ -631,9 +672,14 @@ private struct ItemRow: View {
                         onUpdate(editText)
                     }
                     .onAppear {
-                        editText = text
+                        // Set text empty first, focus, then set the real text
+                        // This forces the cursor to the end
+                        editText = ""
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             isFocused = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                                editText = text
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -641,6 +687,12 @@ private struct ItemRow: View {
                 Text(text)
                     .font(.callout)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        HapticService.playGeneric()
+                        editText = text
+                        onEdit()
+                    }
             }
 
             // Action buttons — same position, swap content
@@ -719,202 +771,3 @@ private struct ItemRow: View {
     }
 }
 
-// MARK: - Schedule Popover
-
-private struct SchedulePopover: View {
-    @Binding var mood: Mood
-    let store: MoodStore
-    let onSave: () -> Void
-
-    @State private var editingSchedule: MoodSchedule = MoodSchedule()
-    @State private var editingIndex: Int? = nil
-
-    private let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Text("Schedules")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    editingSchedule = MoodSchedule()
-                    editingIndex = nil
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help("Add schedule")
-            }
-
-            // Existing schedule bubbles
-            if !mood.schedules.isEmpty {
-                VStack(spacing: 6) {
-                    ForEach(Array(mood.schedules.enumerated()), id: \.element.id) { index, sched in
-                        HStack(spacing: 8) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.blue)
-
-                            Text(sched.summary)
-                                .font(.system(size: 12, design: .monospaced))
-
-                            Text(daysLabel(for: sched))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-
-                            Spacer()
-
-                            Button {
-                                editingSchedule = sched
-                                editingIndex = index
-                            } label: {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                mood.schedules.remove(at: index)
-                                onSave()
-                            } label: {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.red.opacity(0.6))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
-                    }
-                }
-            }
-
-            Divider()
-
-            // Editor
-            VStack(alignment: .leading, spacing: 8) {
-                Text(editingIndex != nil ? "Edit schedule" : "New schedule")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-
-                // Time pickers
-                HStack(spacing: 12) {
-                    HStack(spacing: 3) {
-                        Text("Start")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Picker("", selection: $editingSchedule.startHour) {
-                            ForEach(0..<24, id: \.self) { h in
-                                Text(String(format: "%02d", h)).tag(h)
-                            }
-                        }
-                        .frame(width: 55)
-                        Text(":")
-                            .foregroundStyle(.secondary)
-                        Picker("", selection: $editingSchedule.startMinute) {
-                            Text("00").tag(0)
-                            Text("30").tag(30)
-                        }
-                        .frame(width: 50)
-                    }
-
-                    HStack(spacing: 3) {
-                        Text("End")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Picker("", selection: $editingSchedule.endHour) {
-                            ForEach(0..<24, id: \.self) { h in
-                                Text(String(format: "%02d", h)).tag(h)
-                            }
-                        }
-                        .frame(width: 55)
-                        Text(":")
-                            .foregroundStyle(.secondary)
-                        Picker("", selection: $editingSchedule.endMinute) {
-                            Text("00").tag(0)
-                            Text("30").tag(30)
-                        }
-                        .frame(width: 50)
-                    }
-                }
-
-                // Day buttons
-                HStack(spacing: 4) {
-                    ForEach(1...7, id: \.self) { day in
-                        let isOn = editingSchedule.days.contains(day)
-                        Button {
-                            HapticService.playGeneric()
-                            if isOn { editingSchedule.days.remove(day) }
-                            else { editingSchedule.days.insert(day) }
-                        } label: {
-                            Text(dayLabels[day - 1])
-                                .font(.system(size: 10, weight: isOn ? .semibold : .regular))
-                                .foregroundStyle(isOn ? .white : .secondary)
-                                .frame(width: 34, height: 24)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .fill(isOn ? Color.accentColor : Color.primary.opacity(0.06))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                // Conflict warning
-                if let conflict = store.scheduleConflict(for: editingSchedule, excludingMood: mood.id) {
-                    let dayNames = conflict.days.sorted().map { dayLabels[$0 - 1] }.joined(separator: ", ")
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10))
-                        Text("Conflicts with \"\(conflict.mood.name)\" on \(dayNames)")
-                            .font(.caption)
-                    }
-                    .foregroundStyle(.red)
-                }
-
-                // Save button
-                HStack {
-                    Spacer()
-                    Button {
-                        saveSchedule()
-                    } label: {
-                        Text(editingIndex != nil ? "Update" : "Add")
-                            .font(.callout.weight(.medium))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .disabled(editingSchedule.days.isEmpty || store.scheduleConflict(for: editingSchedule, excludingMood: mood.id) != nil)
-                }
-            }
-        }
-        .padding(16)
-    }
-
-    private func saveSchedule() {
-        if let index = editingIndex, index < mood.schedules.count {
-            mood.schedules[index] = editingSchedule
-        } else {
-            var newSched = editingSchedule
-            newSched.id = UUID()
-            mood.schedules.append(newSched)
-        }
-        onSave()
-        editingSchedule = MoodSchedule()
-        editingIndex = nil
-    }
-
-    private func daysLabel(for sched: MoodSchedule) -> String {
-        let sorted = sched.days.sorted()
-        let abbrev = ["M", "T", "W", "T", "F", "S", "S"]
-        if sorted == [1,2,3,4,5] { return "Weekdays" }
-        if sorted == [6,7] { return "Weekends" }
-        if sorted == [1,2,3,4,5,6,7] { return "Every day" }
-        return sorted.map { abbrev[$0 - 1] }.joined(separator: " ")
-    }
-}
