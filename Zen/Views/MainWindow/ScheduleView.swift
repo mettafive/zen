@@ -80,6 +80,8 @@ struct ScheduleView: View {
                     Toggle("", isOn: $settings.scheduleEnabled)
                         .toggleStyle(.switch)
                         .labelsHidden()
+                        .scaleEffect(0.8)
+                        .onChange(of: settings.scheduleEnabled) { HapticService.playGeneric() }
 
                     Text(settings.scheduleEnabled ? "activated" : "inactivated")
                         .font(.system(size: 11))
