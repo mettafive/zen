@@ -34,7 +34,7 @@ final class ToastManager {
         guard let screen = NSScreen.main else { return }
 
         let maxPanelWidth: CGFloat = 600
-        let panelHeight: CGFloat = 100
+        let panelHeight: CGFloat = 80
 
         let x = screen.frame.midX - maxPanelWidth / 2
         let y = screen.frame.minY + 30
@@ -91,15 +91,12 @@ struct BodyReminderView: View {
             shadowOpacity: 1.0,
             lineProgress: 0,
             lineVisible: false,
-            showShimmer: false,
-            pillHeight: 72
+            showShimmer: false
         ) {
             Text(text)
                 .font(ZenPillStyle.textFont)
                 .foregroundStyle(ZenPillStyle.textColor)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.85)
+                .lineLimit(1)
                 .padding(.horizontal, 20)
         }
         .frame(maxWidth: .infinity)

@@ -28,8 +28,8 @@
             <enclosure
                 url="https://github.com/mettafive/zen/releases/download/v1.0.0/Zen-1.0.0.dmg"
                 type="application/octet-stream"
-                sparkle:edSignature="56bI0f9aN0bSTNtqqhU17hJVww8q8rmZAiGkLz2sTC4CgsQr1fg6umqh8FUSAsWLMYgS7I/nfDKNAsXydXqmBw=="
-                length="2344401"
+                sparkle:edSignature="2NOc6BfmD73posuNMtTcaw32Lgfzh3/DLmeEQQm1oPjN4CxvdqcWcjDpXXVxsejkRif6uZ0ID6zM9GKJSUuUBg=="
+                length="2339971"
             />
         </item>
     </channel>
