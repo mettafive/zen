@@ -72,7 +72,7 @@ struct ScheduleView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 // Header row
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 10) {
                     Text("Schedule")
                         .font(.title2.weight(.medium))
 
@@ -81,6 +81,10 @@ struct ScheduleView: View {
                         .labelsHidden()
                         .scaleEffect(0.7)
                         .tint(Color(red: 0.95, green: 0.63, blue: 0.21))
+
+                    Text(settings.scheduleEnabled ? "activated" : "inactivated")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
 
                     Spacer()
 
@@ -968,12 +972,18 @@ private struct SidebarMoodItem: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
+            Spacer()
+            Text("⠿")
+                .font(.system(size: 14))
+                .foregroundStyle(.quaternary)
+                .opacity(isHovered ? 1 : 0)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(isHovered ? 0.05 : 0)))
         .onHover { h in isHovered = h }
+        .cursor(isHovered ? .openHand : .arrow)
         .draggable(mood.id.uuidString)
     }
 }
