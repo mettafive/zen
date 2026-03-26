@@ -390,6 +390,8 @@ final class MoodStore: ObservableObject {
         } catch {
             print("[Zen] Failed to save moods: \(error)")
         }
+        // Re-evaluate schedule after any mood/schedule change
+        checkSchedule()
     }
 
     func resetToDefaults() {

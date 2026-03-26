@@ -58,6 +58,9 @@ struct MainContentView: View {
                         }
                         .tag(4)
                 }
+                .onChange(of: selectedTab) {
+                    store.checkSchedule()
+                }
             }
             .frame(minWidth: 500, minHeight: 400)
             .overlay(alignment: .bottom) {

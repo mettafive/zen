@@ -153,8 +153,9 @@ struct HomeView: View {
             return
         }
 
-        // Schedule is on → override flow
-        if settings.scheduleEnabled {
+        // Schedule is on AND has actual blocks → override flow
+        let hasBlocks = store.moods.contains { !$0.schedules.isEmpty }
+        if settings.scheduleEnabled && hasBlocks {
             if settings.neverShowOverrideExplanation {
                 store.overrideSchedule(moodId: mood.id)
             } else {
