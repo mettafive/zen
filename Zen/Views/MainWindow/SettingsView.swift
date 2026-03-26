@@ -22,8 +22,8 @@ struct SettingsView: View {
                 if settings.timerMode == "adaptive" {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Label("Your timer learns — starts at 5 min and adapts as you go", systemImage: "brain")
-                            Label("Present? Interval grows. Drifted? It shortens.", systemImage: "arrow.up.arrow.down")
+                            Label("Starts at 5 min and adapts as you go", systemImage: "brain")
+                            Label("Grows when you're present, shortens when you're not", systemImage: "arrow.up.arrow.down")
                             Label("Ranges between 45 seconds and 30 minutes", systemImage: "ruler")
                             Label("Left edge = present · Right edge = not present", systemImage: "rectangle.lefthalf.filled")
                         }
@@ -57,31 +57,7 @@ struct SettingsView: View {
                         appDelegate?.timerService.applyMode()
                     }
 
-                    Toggle("Variance", isOn: $settings.staticVarianceEnabled)
-                        .onChange(of: settings.staticVarianceEnabled) { HapticService.playGeneric() }
-                    Text("Adds randomness around the interval so it feels less robotic.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if settings.staticVarianceEnabled {
-                        Picker("+/−", selection: $settings.staticVarianceMinutes) {
-                            Text("± 1 min").tag(1.0)
-                            Text("± 2 min").tag(2.0)
-                            Text("± 3 min").tag(3.0)
-                            Text("± 5 min").tag(5.0)
-                        }
-                        .onChange(of: settings.staticVarianceMinutes) {
-                            appDelegate?.timerService.applyMode()
-                        }
-
-                        let baseMin = Int(settings.staticInterval / 60)
-                        let varMin = Int(settings.staticVarianceMinutes)
-                        let lo = max(1, baseMin - varMin)
-                        let hi = min(40, baseMin + varMin)
-                        Text("Range: \(lo) – \(hi) min")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                    // Variance hidden for v1 — hardcoded to ±1 min in AppSettings defaults
                 }
             }
 

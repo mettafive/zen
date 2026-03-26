@@ -7,5 +7,5 @@ enum Constants {
     static let maxInterval: TimeInterval = 1800 // 30 minutes
 
     // Adaptive algorithm
-    static let intervalStep: TimeInterval = 3 // ±3 seconds per vote
+    static let intervalStep: TimeInterval = 5 // ±5 seconds per vote
 }
