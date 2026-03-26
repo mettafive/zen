@@ -14,9 +14,27 @@ struct DaySummary: Identifiable {
     }
 }
 
+struct HourSummary: Identifiable {
+    let id: Int // hour 0-23
+    let hour: Int
+    let presentCount: Int
+    let totalCount: Int
+
+    var presenceRate: Double {
+        guard totalCount > 0 else { return 0 }
+        return Double(presentCount) / Double(totalCount)
+    }
+}
+
 struct AnalyticsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PresenceEntry.timestamp, order: .reverse) private var allEntries: [PresenceEntry]
+    @State private var chartMode: ChartMode = .byHour
+
+    enum ChartMode: String, CaseIterable {
+        case byHour = "By Hour"
+        case last7Days = "Last 7 Days"
+    }
 
     private var todayEntries: [PresenceEntry] {
         let startOfDay = Date().startOfDay
@@ -48,6 +66,23 @@ struct AnalyticsView: View {
                 date: date,
                 presentCount: dayEntries.filter(\.wasPresent).count,
                 totalCount: dayEntries.count
+            )
+        }
+    }
+
+    private var hourData: [HourSummary] {
+        let calendar = Calendar.current
+        // Use last 7 days of data for hourly averages
+        let cutoff = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        let recentEntries = allEntries.filter { $0.timestamp >= cutoff }
+
+        return (0..<24).map { hour in
+            let hourEntries = recentEntries.filter { calendar.component(.hour, from: $0.timestamp) == hour }
+            return HourSummary(
+                id: hour,
+                hour: hour,
+                presentCount: hourEntries.filter(\.wasPresent).count,
+                totalCount: hourEntries.count
             )
         }
     }
@@ -86,47 +121,25 @@ struct AnalyticsView: View {
                     )
                 }
 
-                // 7-day chart
+                // Chart section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Last 7 Days")
-                        .font(.headline)
+                    HStack {
+                        Picker("", selection: $chartMode) {
+                            ForEach(ChartMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
 
-                    if weekData.allSatisfy({ $0.totalCount == 0 }) {
-                        Text("No data yet. Start using Zen and your presence data will appear here.")
-                            .foregroundStyle(.secondary)
-                            .frame(height: 150)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Chart(weekData) { day in
-                            BarMark(
-                                x: .value("Day", day.date, unit: .day),
-                                y: .value("Rate", day.presenceRate)
-                            )
-                            .foregroundStyle(
-                                day.presenceRate >= 0.7
-                                    ? Color.green.gradient
-                                    : day.presenceRate >= 0.4
-                                        ? Color.orange.gradient
-                                        : Color.red.gradient
-                            )
-                            .cornerRadius(4)
-                        }
-                        .chartYAxis {
-                            AxisMarks(values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
-                                AxisGridLine()
-                                AxisValueLabel {
-                                    if let v = value.as(Double.self) {
-                                        Text("\(Int(v * 100))%")
-                                    }
-                                }
-                            }
-                        }
-                        .chartXAxis {
-                            AxisMarks(values: .stride(by: .day)) { value in
-                                AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-                            }
-                        }
-                        .frame(height: 200)
+                        Spacer()
+                    }
+
+                    switch chartMode {
+                    case .byHour:
+                        hourlyChart
+                    case .last7Days:
+                        weeklyChart
                     }
                 }
                 .padding()
@@ -165,6 +178,140 @@ struct AnalyticsView: View {
             .padding()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Hourly Chart
+
+    private var hourlyChart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Presence by hour of day")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            if hourData.allSatisfy({ $0.totalCount == 0 }) {
+                Text("No data yet. Use Zen for a few days and your hourly patterns will appear here.")
+                    .foregroundStyle(.secondary)
+                    .frame(height: 150)
+                    .frame(maxWidth: .infinity)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    Chart(hourData) { hour in
+                        BarMark(
+                            x: .value("Hour", String(format: "%02d", hour.hour)),
+                            y: .value("Rate", hour.totalCount > 0 ? hour.presenceRate : 0)
+                        )
+                        .foregroundStyle(barColor(for: hour))
+                        .cornerRadius(3)
+                        .annotation(position: .top, spacing: 2) {
+                            if hour.totalCount > 0 {
+                                Text("\(Int(hour.presenceRate * 100))")
+                                    .font(.system(size: 8, design: .monospaced))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(values: [0, 0.5, 1.0]) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
+                            AxisValueLabel {
+                                if let v = value.as(Double.self) {
+                                    Text("\(Int(v * 100))%")
+                                        .font(.system(size: 9))
+                                }
+                            }
+                        }
+                    }
+                    .chartYScale(domain: 0...1)
+                    .chartXAxis {
+                        AxisMarks { value in
+                            AxisValueLabel()
+                                .font(.system(size: 9, design: .monospaced))
+                        }
+                    }
+                    .frame(width: max(500, CGFloat(hourData.filter { $0.totalCount > 0 }.count) * 32), height: 200)
+                }
+
+                // Legend
+                HStack(spacing: 16) {
+                    legendDot(color: .green, label: "70%+")
+                    legendDot(color: .orange, label: "40-70%")
+                    legendDot(color: .red, label: "<40%")
+                    legendDot(color: .primary.opacity(0.08), label: "no data")
+                }
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    // MARK: - Weekly Chart
+
+    private var weeklyChart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Presence rate per day")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            if weekData.allSatisfy({ $0.totalCount == 0 }) {
+                Text("No data yet. Start using Zen and your presence data will appear here.")
+                    .foregroundStyle(.secondary)
+                    .frame(height: 150)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Chart(weekData) { day in
+                    BarMark(
+                        x: .value("Day", day.date, unit: .day),
+                        y: .value("Rate", day.presenceRate)
+                    )
+                    .foregroundStyle(
+                        day.presenceRate >= 0.7
+                            ? Color.green.gradient
+                            : day.presenceRate >= 0.4
+                                ? Color.orange.gradient
+                                : Color.red.gradient
+                    )
+                    .cornerRadius(4)
+                }
+                .chartYAxis {
+                    AxisMarks(values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let v = value.as(Double.self) {
+                                Text("\(Int(v * 100))%")
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day)) { value in
+                        AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                    }
+                }
+                .frame(height: 200)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func barColor(for hour: HourSummary) -> AnyShapeStyle {
+        guard hour.totalCount > 0 else {
+            return AnyShapeStyle(Color.primary.opacity(0.08))
+        }
+        if hour.presenceRate >= 0.7 {
+            return AnyShapeStyle(Color.green.gradient)
+        } else if hour.presenceRate >= 0.4 {
+            return AnyShapeStyle(Color.orange.gradient)
+        } else {
+            return AnyShapeStyle(Color.red.gradient)
+        }
+    }
+
+    private func legendDot(color: some ShapeStyle, label: String) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label)
+        }
     }
 }
 
