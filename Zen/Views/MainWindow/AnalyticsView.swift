@@ -132,6 +132,10 @@ struct AnalyticsView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 220)
 
+                        Text(chartMode == .byHour ? "Presence by hour of day" : "Presence rate per day")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+
                         Spacer()
                     }
 
@@ -184,10 +188,6 @@ struct AnalyticsView: View {
 
     private var hourlyChart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Presence by hour of day")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
             if hourData.allSatisfy({ $0.totalCount == 0 }) {
                 Text("No data yet. Use Zen for a few days and your hourly patterns will appear here.")
                     .foregroundStyle(.secondary)
@@ -246,10 +246,6 @@ struct AnalyticsView: View {
 
     private var weeklyChart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Presence rate per day")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
             if weekData.allSatisfy({ $0.totalCount == 0 }) {
                 Text("No data yet. Start using Zen and your presence data will appear here.")
                     .foregroundStyle(.secondary)
