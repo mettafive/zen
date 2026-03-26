@@ -16,8 +16,8 @@ private func toDisplayMinutes(_ abs: Int) -> Int {
 private func toAbsoluteMinutes(_ disp: Int) -> Int {
     (disp + dayStartHour * 60) % totalMinutesInDay
 }
-private func snap30(_ m: Int) -> Int {
-    Int(round(Double(m) / 30.0)) * 30
+private func snapHour(_ m: Int) -> Int {
+    Int(round(Double(m) / 60.0)) * 60
 }
 
 struct ScheduleView: View {
@@ -155,7 +155,7 @@ struct ScheduleView: View {
 
     private func handleDrop(moodId: UUID, day: Int, displayMinutes: Int) {
         dropPreview = nil
-        let snapped = snap30(displayMinutes)
+        let snapped = snapHour(displayMinutes)
         let absStart = toAbsoluteMinutes(snapped)
         let absEnd = toAbsoluteMinutes(snapped + 120) // 2 hours default
 
@@ -322,7 +322,7 @@ private struct DayRow: View {
 
                 // Normal sidebar drop
                 guard let moodId = UUID(uuidString: payload) else { return false }
-                let displayMinutes = snap30(Int(location.x / rowWidth * 24 * 60))
+                let displayMinutes = snapHour(Int(location.x / rowWidth * 24 * 60))
                 onDrop(moodId, displayMinutes)
                 return true
             } isTargeted: { targeted in
@@ -356,25 +356,6 @@ private struct ScheduleBlockView: View {
     @State private var leftDragOffset: CGFloat = 0
     @State private var rightDragOffset: CGFloat = 0
     @State private var xHovered = false
-    @State private var lastHapticPixel: CGFloat = 0
-
-    // Snapped offset — jumps in 30-min increments
-    private var snappedBodyOffset: CGFloat {
-        let minutesDelta = bodyDragOffset / pph * 60
-        let snapped = round(minutesDelta / 30) * 30
-        return snapped / 60 * pph
-    }
-
-    /// Fires one haptic per 30-min snap crossing. Uses pixel-based dead zone
-    /// to prevent subpixel jitter from spamming haptics.
-    private func hapticOnSnap(rawPixels: CGFloat) {
-        let snapWidth = pph * 0.5 // pixels per 30 minutes
-        let snappedPixel = round(rawPixels / snapWidth) * snapWidth
-        if abs(snappedPixel - lastHapticPixel) >= snapWidth * 0.9 {
-            lastHapticPixel = snappedPixel
-            HapticService.playAlignment()
-        }
-    }
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
     private var currentW: CGFloat { max(blockW - leftDragOffset + rightDragOffset, 20) }
@@ -436,17 +417,16 @@ private struct ScheduleBlockView: View {
                             .onChanged { v in
                                 isDragging = true
                                 leftDragOffset = v.translation.width
-                                hapticOnSnap(rawPixels: v.translation.width)
                             }
                             .onEnded { v in
-                                let delta = snap30(Int(v.translation.width / pph * 60))
+                                let delta = snapHour(Int(v.translation.width / pph * 60))
                                 let newStart = max(0, block.startMinutes + delta)
-                                if newStart < block.endMinutes - 29 {
+                                if newStart < block.endMinutes - 59 {
                                     onResize(newStart, block.endMinutes)
                                 }
                                 leftDragOffset = 0
                                 isDragging = false
-                                lastHapticPixel = 0
+                                HapticService.playAlignment()
                             }
                     )
 
@@ -463,36 +443,32 @@ private struct ScheduleBlockView: View {
                             .onChanged { v in
                                 isDragging = true
                                 rightDragOffset = v.translation.width
-                                hapticOnSnap(rawPixels: v.translation.width)
                             }
                             .onEnded { v in
-                                let delta = snap30(Int(v.translation.width / pph * 60))
+                                let delta = snapHour(Int(v.translation.width / pph * 60))
                                 let newEnd = min(1440, block.endMinutes + delta)
-                                if newEnd > block.startMinutes + 29 {
+                                if newEnd > block.startMinutes + 59 {
                                     onResize(block.startMinutes, newEnd)
                                 }
                                 rightDragOffset = 0
                                 isDragging = false
-                                lastHapticPixel = 0
+                                HapticService.playAlignment()
                             }
                     )
             }
         }
         .frame(width: currentW, height: rowHeight - 8)
-        .offset(x: blockX + snappedBodyOffset + leftDragOffset, y: 4 + verticalDragOffset)
-        .animation(.easeOut(duration: 0.08), value: snappedBodyOffset)
-        .animation(.easeOut(duration: 0.1), value: verticalDragOffset)
+        .offset(x: blockX + bodyDragOffset + leftDragOffset, y: 4 + verticalDragOffset)
         .opacity(isHovered ? 1.0 : 0.85)
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .onTapGesture { onSelect() }
-        // Body drag — horizontal move + vertical row change
+        // Body drag — free follow, snap to hour on release
         .gesture(
             DragGesture(minimumDistance: 12)
                 .onChanged { v in
                     isDragging = true
                     bodyDragOffset = v.translation.width
-                    hapticOnSnap(rawPixels: v.translation.width)
 
                     // Vertical: resist until 25px threshold, then track
                     let verticalRaw = v.translation.height
@@ -503,13 +479,14 @@ private struct ScheduleBlockView: View {
                     }
                 }
                 .onEnded { v in
-                    // Horizontal — commit snapped position
+                    // Horizontal — snap to nearest hour
                     let minutesDelta = v.translation.width / pph * 60
-                    let delta = Int(round(minutesDelta / 30)) * 30
+                    let delta = snapHour(Int(minutesDelta))
                     let displayStart = toDisplayMinutes(block.startMinutes)
                     let dur = block.endMinutes - block.startMinutes
                     let newDisplayStart = max(0, min(totalMinutesInDay - dur, displayStart + delta))
-                    onMove(snap30(newDisplayStart))
+                    onMove(snapHour(newDisplayStart))
+                    HapticService.playAlignment()
 
                     // Vertical — if dragged far enough, move to another row
                     let rowShift = Int(round(v.translation.height / rowPitch))
@@ -523,7 +500,6 @@ private struct ScheduleBlockView: View {
                     bodyDragOffset = 0
                     verticalDragOffset = 0
                     isDragging = false
-                    lastHapticPixel = 0
                 }
         )
         .contextMenu {
