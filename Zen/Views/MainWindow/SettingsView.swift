@@ -57,7 +57,7 @@ struct SettingsView: View {
                         appDelegate?.timerService.applyMode()
                     }
 
-                    Text("A small ±1 min variance is added so the bell never feels robotic.")
+                    Text("A small variance is added so the bell never feels robotic.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
