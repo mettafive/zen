@@ -10,6 +10,7 @@ enum HomeDestination: Hashable {
 struct HomeView: View {
     @ObservedObject private var store = MoodStore.shared
     @ObservedObject private var settings = AppSettings.shared
+    @State private var navigationPath = NavigationPath()
     @State private var importState: ImportState = .idle
     @State private var importError: String? = nil
     @State private var showImportError = false
@@ -25,7 +26,7 @@ struct HomeView: View {
     @Environment(\.appDelegate) private var appDelegate
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 ScrollView {
                     HStack {
@@ -98,10 +99,12 @@ struct HomeView: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            LabeledActionButton(icon: "square.and.arrow.up", label: "Import mood", color: .secondary) {
-                openImportPanel()
+            if navigationPath.isEmpty {
+                LabeledActionButton(icon: "square.and.arrow.up", label: "Import mood", color: .secondary) {
+                    openImportPanel()
+                }
+                .padding(20)
             }
-            .padding(20)
         }
     }
 
