@@ -98,18 +98,18 @@ struct OnboardingView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "arrow.left.to.line")
                         .font(.system(size: 22))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color(red: 0.85, green: 0.53, blue: 0.11))
                     Text("Present")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color(red: 0.85, green: 0.53, blue: 0.11))
                 }
                 VStack(spacing: 6) {
                     Image(systemName: "arrow.right.to.line")
                         .font(.system(size: 22))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color(white: 0.4))
                     Text("Not present")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color(white: 0.4))
                 }
             }
 

@@ -64,7 +64,7 @@ struct MainContentView: View {
                     store.checkSchedule()
                 }
             }
-            .frame(minWidth: 580, minHeight: 500)
+            .frame(minWidth: 580, minHeight: 575)
             .overlay(alignment: .bottomLeading) {
                 if showTip && !tipDismissed {
                     VStack(alignment: .leading, spacing: 6) {
@@ -247,8 +247,8 @@ struct MainContentView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(minHeight: 40)
+        .padding(.vertical, 10)
+        .fixedSize(horizontal: false, vertical: true)
         .background(.bar)
     }
 }
