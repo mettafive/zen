@@ -390,7 +390,6 @@ private struct ScheduleBlockView: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .opacity(isDragging ? 0 : 1)
-            .animation(.easeOut(duration: 0.15), value: isDragging)
 
             // Delete X
             if isHovered && !isDragging {
@@ -463,7 +462,6 @@ private struct ScheduleBlockView: View {
             y: rowHeight / 2 + (abs(bodyDrag.height) > 25 ? (bodyDrag.height - (bodyDrag.height > 0 ? 25 : -25)) * 0.6 : 0)
         )
         .opacity(isHovered ? 1.0 : 0.85)
-        .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .onTapGesture { onSelect() }
         // Body drag — free follow, snap to hour on release
