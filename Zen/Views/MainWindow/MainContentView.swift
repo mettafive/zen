@@ -72,7 +72,7 @@ struct MainContentView: View {
                             Text("Tip")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.primary)
-                            Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell.")
+                            Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell. (This only works if the countdown is active.)")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(3)
