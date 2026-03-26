@@ -200,7 +200,7 @@ struct ScheduleView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    Text("When the current time doesn't fall inside any block on the calendar, Zen uses this setting. Choose a mood to keep running, or pause to stop reminders entirely.")
+                    Text("When the current time doesn't fall inside any block on the calendar, Zen uses this setting. Choose a mood to keep its quotes and reminders running, or pause to stop entirely.")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineSpacing(2)
