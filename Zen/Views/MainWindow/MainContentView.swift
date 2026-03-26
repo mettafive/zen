@@ -188,14 +188,9 @@ struct MainContentView: View {
                         HapticService.playGeneric()
                         appDelegate.skipVote()
                     } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 24, height: 24)
-                            .contentShape(Rectangle())
+                        TopBarIconButton(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.plain)
-                    .opacity(0.6)
                     .help("Skip vote & restart timer")
                 } else {
                     PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
@@ -260,24 +255,36 @@ struct MainContentView: View {
 private struct PausePlayButton: View {
     let isRunning: Bool
     let action: () -> Void
-    @State private var isHovered = false
 
     var body: some View {
         Button {
             action()
         } label: {
-            Image(systemName: isRunning ? "pause.fill" : "play.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
+            TopBarIconButton(systemName: isRunning ? "pause.fill" : "play.fill")
         }
         .buttonStyle(.plain)
-        .opacity(isHovered ? 1.0 : 0.4)
-        .animation(.easeOut(duration: 0.1), value: isHovered)
         .animation(.easeInOut(duration: 0.15), value: isRunning)
-        .onHover { h in isHovered = h }
         .help(isRunning ? "Pause timer" : "Resume timer")
+    }
+}
+
+private struct TopBarIconButton: View {
+    let systemName: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .frame(width: 26, height: 26)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
+            )
+            .contentShape(Rectangle())
+            .opacity(isHovered ? 1.0 : 0.5)
+            .animation(.easeOut(duration: 0.1), value: isHovered)
+            .onHover { h in isHovered = h }
     }
 }
 

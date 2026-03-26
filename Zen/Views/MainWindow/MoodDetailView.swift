@@ -412,13 +412,9 @@ struct MoodDetailView: View {
                     searchText = ""
                 }
             } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
+                HoverIconButton(systemName: "magnifyingglass", isActive: showSearch)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(showSearch ? .primary : .secondary)
             .help("Search")
 
             Button {
@@ -429,13 +425,9 @@ struct MoodDetailView: View {
                 }
                 addNewItem()
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
+                HoverIconButton(systemName: "plus")
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
             .disabled(editingNewIndex != nil)
             .help(selectedTab == 0 ? "Add quote" : "Add reminder")
         }
@@ -677,6 +669,26 @@ private struct MoodActionButton: View {
 }
 
 // MARK: - Labeled Action Button (icon + text pill)
+
+struct HoverIconButton: View {
+    let systemName: String
+    var isActive: Bool = false
+    @State private var isHovered = false
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(isActive ? .primary : .secondary)
+            .frame(width: 28, height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
+            )
+            .contentShape(Rectangle())
+            .animation(.easeOut(duration: 0.1), value: isHovered)
+            .onHover { h in isHovered = h }
+    }
+}
 
 struct LabeledActionButton: View {
     let icon: String
