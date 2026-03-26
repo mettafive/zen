@@ -30,6 +30,7 @@ struct AnalyticsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PresenceEntry.timestamp, order: .reverse) private var allEntries: [PresenceEntry]
     @State private var chartMode: ChartMode = .byHour
+    @State private var hourlyDayOffset: Int = 0 // 0 = today, -1 = yesterday, etc.
 
     enum ChartMode: String, CaseIterable {
         case byHour = "By Hour"
@@ -70,14 +71,19 @@ struct AnalyticsView: View {
         }
     }
 
+    private var hourlySelectedDate: Date {
+        Calendar.current.date(byAdding: .day, value: hourlyDayOffset, to: Date().startOfDay) ?? Date().startOfDay
+    }
+
     private var hourData: [HourSummary] {
         let calendar = Calendar.current
-        // Use last 7 days of data for hourly averages
-        let cutoff = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let recentEntries = allEntries.filter { $0.timestamp >= cutoff }
+        let dayStart = hourlySelectedDate
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+
+        let dayEntries = allEntries.filter { $0.timestamp >= dayStart && $0.timestamp < dayEnd }
 
         return (0..<24).map { hour in
-            let hourEntries = recentEntries.filter { calendar.component(.hour, from: $0.timestamp) == hour }
+            let hourEntries = dayEntries.filter { calendar.component(.hour, from: $0.timestamp) == hour }
             return HourSummary(
                 id: hour,
                 hour: hour,
@@ -85,6 +91,24 @@ struct AnalyticsView: View {
                 totalCount: hourEntries.count
             )
         }
+    }
+
+    private var hasPreviousDay: Bool {
+        let calendar = Calendar.current
+        let prevDay = calendar.date(byAdding: .day, value: hourlyDayOffset - 1, to: Date().startOfDay) ?? Date()
+        return allEntries.contains { $0.timestamp >= prevDay && $0.timestamp < hourlySelectedDate }
+    }
+
+    private var hasNextDay: Bool {
+        hourlyDayOffset < 0
+    }
+
+    private var hourlyDateLabel: String {
+        if hourlyDayOffset == 0 { return "Today" }
+        if hourlyDayOffset == -1 { return "Yesterday" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        return formatter.string(from: hourlySelectedDate)
     }
 
     var body: some View {
@@ -189,7 +213,7 @@ struct AnalyticsView: View {
     private var hourlyChart: some View {
         VStack(alignment: .leading, spacing: 8) {
             if hourData.allSatisfy({ $0.totalCount == 0 }) {
-                Text("No data yet. Use Zen for a few days and your hourly patterns will appear here.")
+                Text("No data for \(hourlyDateLabel.lowercased()). Use Zen and your hourly patterns will appear here.")
                     .foregroundStyle(.secondary)
                     .frame(height: 150)
                     .frame(maxWidth: .infinity)
@@ -201,7 +225,7 @@ struct AnalyticsView: View {
                     )
                     .foregroundStyle(barColor(for: hour))
                     .cornerRadius(3)
-                    .annotation(position: .top, spacing: 2) {
+                    .annotation(position: .top, spacing: 4) {
                         if hour.totalCount > 0 {
                             Text("\(Int(hour.presenceRate * 100))")
                                 .font(.system(size: 8, design: .monospaced))
@@ -220,7 +244,7 @@ struct AnalyticsView: View {
                         }
                     }
                 }
-                .chartYScale(domain: 0...1)
+                .chartYScale(domain: 0...1.12) // Extra headroom for 100% annotations
                 .chartXAxis {
                     AxisMarks { value in
                         AxisValueLabel()
@@ -229,7 +253,10 @@ struct AnalyticsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
+            }
 
+            // Navigation + Legend
+            HStack {
                 // Legend
                 HStack(spacing: 16) {
                     legendDot(color: .green, label: "70%+")
@@ -238,6 +265,44 @@ struct AnalyticsView: View {
                 }
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
+
+                Spacer()
+
+                // Day navigation
+                HStack(spacing: 12) {
+                    if hasPreviousDay {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { hourlyDayOffset -= 1 }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 24, height: 24)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Text(hourlyDateLabel)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 70)
+
+                    if hasNextDay {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { hourlyDayOffset += 1 }
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 24, height: 24)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }
