@@ -256,80 +256,101 @@ struct ScheduleView: View {
 
     // MARK: - Schedule Onboarding
 
+    @State private var scheduleOnboardingAppeared = true
+
+    private let schedZenOrange = Color(red: 0.91, green: 0.57, blue: 0.23)
+    private let schedZenOrangeBg = Color(red: 0.996, green: 0.953, blue: 0.902)
+
     private var scheduleOnboardingOverlay: some View {
         ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
+            Color(nsColor: NSColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 0.95))
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
+            VStack(spacing: 18) {
                 Group {
                     switch scheduleOnboardingStep {
                     case 0:
-                        VStack(spacing: 12) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 30))
-                                .foregroundStyle(.secondary)
-                            Text("Schedule")
-                                .font(.system(size: 20, weight: .medium, design: .serif))
+                        VStack(spacing: 14) {
+                            schedTagPill("Schedule")
+                            schedIconCircle("calendar")
+                            Text("Different moods, different times")
+                                .font(.system(size: 20, weight: .light, design: .serif))
+                                .tracking(-0.5)
                             Text("Set different moods for different\ntimes of day and days of the week.")
-                                .font(.system(size: 12, design: .serif))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
+                                .lineSpacing(2)
                         }
                     case 1:
-                        VStack(spacing: 12) {
-                            Image(systemName: "hand.draw")
-                                .font(.system(size: 30))
-                                .foregroundStyle(.secondary)
+                        VStack(spacing: 14) {
+                            schedTagPill("Step 1")
+                            schedIconCircle("hand.draw")
                             Text("Drag and resize")
-                                .font(.system(size: 20, weight: .medium, design: .serif))
+                                .font(.system(size: 20, weight: .light, design: .serif))
+                                .tracking(-0.5)
                             Text("Drag a mood from the sidebar into\nthe calendar. Resize by dragging the edges.")
-                                .font(.system(size: 12, design: .serif))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
+                                .lineSpacing(2)
                         }
                     case 2:
-                        VStack(spacing: 12) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 30))
-                                .foregroundStyle(.secondary)
+                        VStack(spacing: 14) {
+                            schedTagPill("Step 2")
+                            schedIconCircle("doc.on.doc")
                             Text("Copy and paste")
-                                .font(.system(size: 20, weight: .medium, design: .serif))
+                                .font(.system(size: 20, weight: .light, design: .serif))
+                                .tracking(-0.5)
                             Text("Use the copy button on each day row\nto duplicate blocks to another day.")
-                                .font(.system(size: 12, design: .serif))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
+                                .lineSpacing(2)
                         }
                     case 3:
-                        VStack(spacing: 12) {
+                        VStack(spacing: 14) {
+                            schedTagPill("Done")
                             Image(systemName: "checkmark.circle")
-                                .font(.system(size: 30))
-                                .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
+                                .font(.system(size: 20, weight: .light))
+                                .foregroundStyle(schedZenOrange)
+                                .frame(width: 48, height: 48)
+                                .background(schedZenOrangeBg)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             Text("That's it")
-                                .font(.system(size: 20, weight: .medium, design: .serif))
-                            Text("Enable the toggle above when\nyou're ready. Zen handles the rest.")
-                                .font(.system(size: 12, design: .serif))
+                                .font(.system(size: 20, weight: .light, design: .serif))
+                                .tracking(-0.5)
+                            Text("Enable the toggle when you're ready.\nZen handles the rest.")
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
+                                .lineSpacing(2)
                         }
                     default: EmptyView()
                     }
                 }
+                .opacity(scheduleOnboardingAppeared ? 1 : 0)
+                .blur(radius: scheduleOnboardingAppeared ? 0 : 3)
+                .offset(y: scheduleOnboardingAppeared ? 0 : 8)
 
-                // Next / Done button
                 if scheduleOnboardingStep < 3 {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(.easeInOut(duration: 0.25)) { scheduleOnboardingAppeared = false }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             scheduleOnboardingStep += 1
+                            withAnimation(.easeOut(duration: 0.5).delay(0.05)) { scheduleOnboardingAppeared = true }
                         }
                     } label: {
                         Text("Next")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.primary)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 7)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.06)))
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.primary.opacity(0.04))
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.06), lineWidth: 0.5))
+                            )
                     }
                     .buttonStyle(.plain)
                 } else {
@@ -341,26 +362,44 @@ struct ScheduleView: View {
                         Text("Got it")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 7)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.95, green: 0.63, blue: 0.21)))
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 0.04, green: 0.04, blue: 0.04)))
                     }
                     .buttonStyle(.plain)
                 }
 
-                // Progress dots
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     ForEach(0..<4, id: \.self) { i in
                         Circle()
-                            .fill(i == scheduleOnboardingStep ? Color.primary.opacity(0.7) : Color.primary.opacity(0.12))
+                            .fill(i == scheduleOnboardingStep ? schedZenOrange.opacity(0.8) : Color.primary.opacity(0.08))
                             .frame(width: i == scheduleOnboardingStep ? 6 : 5, height: i == scheduleOnboardingStep ? 6 : 5)
-                            .animation(.easeInOut(duration: 0.3), value: scheduleOnboardingStep)
+                            .animation(.easeInOut(duration: 0.4), value: scheduleOnboardingStep)
                     }
                 }
                 .padding(.top, 2)
             }
         }
         .transition(.opacity)
+    }
+
+    private func schedTagPill(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .medium))
+            .tracking(1.2)
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+    }
+
+    private func schedIconCircle(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 20, weight: .light))
+            .foregroundStyle(schedZenOrange)
+            .frame(width: 48, height: 48)
+            .background(schedZenOrangeBg)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Actions
