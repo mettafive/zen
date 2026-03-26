@@ -14,7 +14,7 @@ struct MenuBarMenu: View {
                 Divider()
             }
 
-            if settings.scheduleEnabled {
+            if settings.scheduleEnabled && store.moods.contains(where: { !$0.schedules.isEmpty }) {
                 scheduleSection
             } else {
                 moodSection

@@ -809,20 +809,21 @@ private struct RowMenuButton: View {
 
     var body: some View {
         Menu {
-            if hasBlocks {
-                Button {
-                    HapticService.playGeneric()
-                    onCopy()
-                } label: {
-                    Label("Copy row", systemImage: "doc.on.doc")
-                }
-                Button(role: .destructive) {
-                    HapticService.playLevelChange()
-                    onClear()
-                } label: {
-                    Label("Clear row", systemImage: "trash")
-                }
+            Button {
+                HapticService.playGeneric()
+                onCopy()
+            } label: {
+                Label("Copy row", systemImage: "doc.on.doc")
             }
+            .disabled(!hasBlocks)
+
+            Button(role: .destructive) {
+                HapticService.playLevelChange()
+                onClear()
+            } label: {
+                Label("Clear row", systemImage: "trash")
+            }
+            .disabled(!hasBlocks)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 10, weight: .semibold))
