@@ -166,6 +166,25 @@ struct MoodDetailView: View {
                 .padding(.horizontal, 40)
 
             Spacer(minLength: 0)
+
+            // Reminders disabled notice
+            if selectedTab == 1 && !settings.remindersEnabled {
+                HStack(spacing: 6) {
+                    Image(systemName: "bell.slash")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                    Text("Reminders are turned off.")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                    Text("Enable in Settings")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(Color(red: 0.91, green: 0.57, blue: 0.23))
+                }
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(Color.primary.opacity(0.03))
+                .overlay(alignment: .top) { Divider() }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottomLeading) {
