@@ -80,8 +80,7 @@ struct ScheduleView: View {
                     Toggle("", isOn: $settings.scheduleEnabled)
                         .toggleStyle(.switch)
                         .labelsHidden()
-                        .scaleEffect(0.7)
-                        .tint(Color(red: 0.95, green: 0.63, blue: 0.21))
+                        .tint(Color(red: 0.91, green: 0.57, blue: 0.23))
 
                     Text(settings.scheduleEnabled ? "activated" : "inactivated")
                         .font(.system(size: 11))

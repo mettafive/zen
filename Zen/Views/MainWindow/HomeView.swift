@@ -123,7 +123,7 @@ struct HomeView: View {
                 case .success(let name):
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color(red: 0.91, green: 0.57, blue: 0.23))
                     Text("\(name) added!")
                         .font(.headline)
                 default:
@@ -254,7 +254,7 @@ private struct ResumeButton: View {
                 .padding(.vertical, 7)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.green)
+                        .fill(Color(red: 0.91, green: 0.57, blue: 0.23))
                 )
             }
             .buttonStyle(.plain)
@@ -374,7 +374,7 @@ struct MoodCard: View {
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 18))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color(red: 0.91, green: 0.57, blue: 0.23))
                         .transition(.opacity)
                 } else if isHovered {
                     Button {
@@ -445,7 +445,7 @@ struct MoodCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isActive ? Color.green.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: isActive ? 1.5 : 1)
+                .stroke(isActive ? Color(red: 0.91, green: 0.57, blue: 0.23).opacity(0.5) : Color.primary.opacity(0.08), lineWidth: isActive ? 1.5 : 1)
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovered)
