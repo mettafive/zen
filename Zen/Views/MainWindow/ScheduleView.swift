@@ -2,6 +2,7 @@ import SwiftUI
 
 private let dayStartHour = 4
 private let totalMinutesInDay = 1440
+private let rowPitch: CGFloat = 45 // 44px row + 1px divider
 private let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 private let blockColors: [Color] = [
     .blue.opacity(0.7), .green.opacity(0.7), .orange.opacity(0.7),
@@ -355,7 +356,7 @@ private struct ScheduleBlockView: View {
     @State private var leftDragOffset: CGFloat = 0
     @State private var rightDragOffset: CGFloat = 0
     @State private var xHovered = false
-    @State private var lastSnapSlot: Int = 0 // tracks which 30-min slot we're in for haptic
+    @State private var lastHapticPixel: CGFloat = 0
 
     // Snapped offset — jumps in 30-min increments
     private var snappedBodyOffset: CGFloat {
@@ -364,10 +365,13 @@ private struct ScheduleBlockView: View {
         return snapped / 60 * pph
     }
 
+    /// Fires one haptic per 30-min snap crossing. Uses pixel-based dead zone
+    /// to prevent subpixel jitter from spamming haptics.
     private func hapticOnSnap(rawPixels: CGFloat) {
-        let slot = Int(round(rawPixels / pph * 60 / 30))
-        if slot != lastSnapSlot {
-            lastSnapSlot = slot
+        let snapWidth = pph * 0.5 // pixels per 30 minutes
+        let snappedPixel = round(rawPixels / snapWidth) * snapWidth
+        if abs(snappedPixel - lastHapticPixel) >= snapWidth * 0.9 {
+            lastHapticPixel = snappedPixel
             HapticService.playAlignment()
         }
     }
@@ -442,7 +446,7 @@ private struct ScheduleBlockView: View {
                                 }
                                 leftDragOffset = 0
                                 isDragging = false
-                                lastSnapSlot = 0
+                                lastHapticPixel = 0
                             }
                     )
 
@@ -469,7 +473,7 @@ private struct ScheduleBlockView: View {
                                 }
                                 rightDragOffset = 0
                                 isDragging = false
-                                lastSnapSlot = 0
+                                lastHapticPixel = 0
                             }
                     )
             }
@@ -508,7 +512,7 @@ private struct ScheduleBlockView: View {
                     onMove(snap30(newDisplayStart))
 
                     // Vertical — if dragged far enough, move to another row
-                    let rowShift = Int(round(v.translation.height / rowHeight))
+                    let rowShift = Int(round(v.translation.height / rowPitch))
                     if rowShift != 0 {
                         let newDay = block.day + rowShift
                         if newDay >= 1 && newDay <= 7 {
@@ -519,7 +523,7 @@ private struct ScheduleBlockView: View {
                     bodyDragOffset = 0
                     verticalDragOffset = 0
                     isDragging = false
-                    lastSnapSlot = 0
+                    lastHapticPixel = 0
                 }
         )
         .contextMenu {
