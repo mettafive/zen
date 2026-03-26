@@ -55,6 +55,7 @@ struct ScheduleView: View {
 
     @ObservedObject private var settings = AppSettings.shared
     @State private var scheduleOnboardingStep = 0
+    @State private var showOutsideBlocksHelp = false
 
     private var showScheduleOnboarding: Bool {
         !settings.scheduleOnboardingComplete
@@ -88,11 +89,23 @@ struct ScheduleView: View {
 
                     Spacer()
 
-                    // Between sessions — fades in/out with activation
+                    // Outside blocks — fades in/out with activation
                     HStack(spacing: 6) {
-                        Text("Between sessions")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
+                        HStack(spacing: 3) {
+                            Text("Outside blocks")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+                            Button {
+                                showOutsideBlocksHelp.toggle()
+                            } label: {
+                                Text("?")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 14, height: 14)
+                                    .background(Circle().stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
+                            }
+                            .buttonStyle(.plain)
+                        }
                         Picker("", selection: inactiveBehaviorBinding) {
                             Text("Pause (nothing)").tag("pause")
                             Divider()
@@ -108,7 +121,6 @@ struct ScheduleView: View {
                     .opacity(settings.scheduleEnabled ? 1 : 0)
                     .allowsHitTesting(settings.scheduleEnabled)
                     .animation(.easeInOut(duration: 0.3), value: settings.scheduleEnabled)
-                    .help("What Zen does when no block is scheduled. Pause stops reminders; a mood keeps them running.")
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -165,7 +177,53 @@ struct ScheduleView: View {
             if showScheduleOnboarding {
                 scheduleOnboardingOverlay
             }
+
+            // Outside blocks tooltip
+            if showOutsideBlocksHelp {
+                Color.black.opacity(0.01)
+                    .ignoresSafeArea()
+                    .onTapGesture { showOutsideBlocksHelp = false }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Outside blocks")
+                            .font(.system(size: 11, weight: .semibold))
+                        Spacer()
+                        Button {
+                            showOutsideBlocksHelp = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 18, height: 18)
+                                .contentShape(Rectangle())
+                                .background(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 0.5).frame(width: 16, height: 16))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Text("When the current time doesn't fall inside any block on the calendar, Zen uses this setting. Choose a mood to keep running, or pause to stop reminders entirely.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(14)
+                .frame(width: 280)
+                .background(
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.ultraThinMaterial)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.7))
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
+                    }
+                    .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+            }
         } // ZStack
+        .animation(.easeOut(duration: 0.2), value: showOutsideBlocksHelp)
     }
 
     // MARK: - Timeline Grid
