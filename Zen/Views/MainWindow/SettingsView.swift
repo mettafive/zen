@@ -3,7 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
     @Environment(\.appDelegate) private var appDelegate
-    @State private var showResetConfirm = false
+    @State private var showResetSettings = false
+    @State private var showResetEverything = false
 
     var body: some View {
         Form {
@@ -103,42 +104,58 @@ struct SettingsView: View {
             }
 
             Section {
-                Button("Reset to Defaults") {
-                    showResetConfirm = true
+                Button("Reset Settings") {
+                    showResetSettings = true
+                }
+
+                Button("Reset Everything") {
+                    showResetEverything = true
                 }
                 .foregroundStyle(.red)
             }
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .alert("Reset to Defaults?", isPresented: $showResetConfirm) {
+        .alert("Reset Settings?", isPresented: $showResetSettings) {
+            Button("Reset Settings", role: .destructive) {
+                resetSettings()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will reset timer, sound, haptics, and reminders back to defaults. Your moods and schedules will not be affected.")
+        }
+        .alert("Reset Everything?", isPresented: $showResetEverything) {
             Button("Reset Everything", role: .destructive) {
-                // Timer & settings
-                settings.baseInterval = Constants.defaultInterval
-                settings.currentAdaptiveInterval = Constants.defaultInterval
-                settings.hapticEnabled = true
-                settings.soundEnabled = true
-                settings.isActive = true
-                settings.timerMode = "adaptive"
-                settings.staticInterval = 180
-                settings.staticVarianceEnabled = true
-                settings.staticVarianceMinutes = 1
-                settings.remindersEnabled = true
-                settings.reminderIntervalMinutes = 3
-                settings.glowTheme = "orange"
-                settings.quoteOrder = "random"
+                resetSettings()
+                // Moods — wipe all including custom
+                MoodStore.shared.moods = DefaultMoods.all
+                MoodStore.shared.activeMoodId = DefaultMoods.buddhaId
+                MoodStore.shared.save()
                 // Schedule
                 settings.scheduleEnabled = false
                 settings.inactiveBehavior = "00000000-0000-0000-0000-000000000001"
                 settings.scheduleOnboardingComplete = false
-                // Moods
-                MoodStore.shared.resetToDefaults()
-                // Timer
-                appDelegate?.timerService.resetToBase()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will revert all settings, moods, and schedules back to how it was when you first downloaded Zen. This cannot be undone.")
+            Text("This will erase all custom moods, schedules, and restore default moods. All settings will be reset. This cannot be undone.")
         }
+    }
+
+    private func resetSettings() {
+        settings.baseInterval = Constants.defaultInterval
+        settings.currentAdaptiveInterval = Constants.defaultInterval
+        settings.hapticEnabled = true
+        settings.soundEnabled = true
+        settings.isActive = true
+        settings.timerMode = "adaptive"
+        settings.staticInterval = 180
+        settings.staticVarianceEnabled = true
+        settings.staticVarianceMinutes = 1
+        settings.remindersEnabled = true
+        settings.reminderIntervalMinutes = 3
+        settings.glowTheme = "orange"
+        settings.quoteOrder = "random"
+        appDelegate?.timerService.resetToBase()
     }
 }
