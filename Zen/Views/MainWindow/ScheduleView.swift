@@ -355,12 +355,21 @@ private struct ScheduleBlockView: View {
     @State private var leftDragOffset: CGFloat = 0
     @State private var rightDragOffset: CGFloat = 0
     @State private var xHovered = false
+    @State private var lastSnapSlot: Int = 0 // tracks which 30-min slot we're in for haptic
 
-    // Snapped offset — jumps in 30-min increments but with damping
+    // Snapped offset — jumps in 30-min increments
     private var snappedBodyOffset: CGFloat {
         let minutesDelta = bodyDragOffset / pph * 60
         let snapped = round(minutesDelta / 30) * 30
         return snapped / 60 * pph
+    }
+
+    private func hapticOnSnap(rawPixels: CGFloat) {
+        let slot = Int(round(rawPixels / pph * 60 / 30))
+        if slot != lastSnapSlot {
+            lastSnapSlot = slot
+            HapticService.playAlignment()
+        }
     }
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
@@ -423,6 +432,7 @@ private struct ScheduleBlockView: View {
                             .onChanged { v in
                                 isDragging = true
                                 leftDragOffset = v.translation.width
+                                hapticOnSnap(rawPixels: v.translation.width)
                             }
                             .onEnded { v in
                                 let delta = snap30(Int(v.translation.width / pph * 60))
@@ -432,6 +442,7 @@ private struct ScheduleBlockView: View {
                                 }
                                 leftDragOffset = 0
                                 isDragging = false
+                                lastSnapSlot = 0
                             }
                     )
 
@@ -448,6 +459,7 @@ private struct ScheduleBlockView: View {
                             .onChanged { v in
                                 isDragging = true
                                 rightDragOffset = v.translation.width
+                                hapticOnSnap(rawPixels: v.translation.width)
                             }
                             .onEnded { v in
                                 let delta = snap30(Int(v.translation.width / pph * 60))
@@ -457,6 +469,7 @@ private struct ScheduleBlockView: View {
                                 }
                                 rightDragOffset = 0
                                 isDragging = false
+                                lastSnapSlot = 0
                             }
                     )
             }
@@ -475,6 +488,7 @@ private struct ScheduleBlockView: View {
                 .onChanged { v in
                     isDragging = true
                     bodyDragOffset = v.translation.width
+                    hapticOnSnap(rawPixels: v.translation.width)
 
                     // Vertical: resist until 25px threshold, then track
                     let verticalRaw = v.translation.height
@@ -505,6 +519,7 @@ private struct ScheduleBlockView: View {
                     bodyDragOffset = 0
                     verticalDragOffset = 0
                     isDragging = false
+                    lastSnapSlot = 0
                 }
         )
         .contextMenu {
