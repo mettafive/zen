@@ -14,7 +14,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("onboardingComplete") var onboardingComplete: Bool = false
     @AppStorage("quoteX") var quoteX: Double = -1
     @AppStorage("quoteY") var quoteY: Double = -1
-    @AppStorage("timerMode") var timerMode: String = "static" // "adaptive" or "static"
+    @AppStorage("timerMode") var timerMode: String = "adaptive" // "adaptive" or "static"
     @AppStorage("staticVarianceEnabled") var staticVarianceEnabled: Bool = true
     @AppStorage("staticVarianceMinutes") var staticVarianceMinutes: Double = 1
     @AppStorage("quoteOrder") var quoteOrder: String = "random" // "random" or "sequential"
