@@ -1058,7 +1058,7 @@ private struct SidebarMoodItem: View {
             Spacer()
             Text("⠿")
                 .font(.system(size: 14))
-                .foregroundStyle(.quaternary)
+                .foregroundStyle(isHovered ? .secondary : .quaternary)
                 .opacity(isHovered ? 1 : 0)
         }
         .padding(.horizontal, 8)
