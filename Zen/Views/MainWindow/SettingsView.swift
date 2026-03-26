@@ -22,10 +22,10 @@ struct SettingsView: View {
                 if settings.timerMode == "adaptive" {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Label("Starts at 5 min, adjusts with each check-in", systemImage: "brain")
-                            Label("+3s when present · −3s when not present", systemImage: "arrow.up.arrow.down")
-                            Label("Range: 45s – 30 min", systemImage: "ruler")
-                            Label("Left edge = Present · Right edge = Not Present", systemImage: "rectangle.lefthalf.filled")
+                            Label("Your timer learns — starts at 5 min and adapts as you go", systemImage: "brain")
+                            Label("Present? Interval grows. Drifted? It shortens.", systemImage: "arrow.up.arrow.down")
+                            Label("Ranges between 45 seconds and 30 minutes", systemImage: "ruler")
+                            Label("Left edge = present · Right edge = not present", systemImage: "rectangle.lefthalf.filled")
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -36,12 +36,14 @@ struct SettingsView: View {
                             Text(appDelegate?.timerService.currentInterval.minutesAndSeconds ?? "–")
                                 .font(.system(.body, design: .monospaced).monospacedDigit())
                                 .foregroundStyle(.primary)
-                            Button("Reset") {
-                                appDelegate?.timerService.resetToBase()
+                            if settings.currentAdaptiveInterval != Constants.defaultInterval {
+                                Button("Reset") {
+                                    appDelegate?.timerService.resetToBase()
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .buttonStyle(.plain)
                             }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .buttonStyle(.plain)
                         }
                     }
                 } else {
