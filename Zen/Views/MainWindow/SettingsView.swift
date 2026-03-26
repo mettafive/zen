@@ -57,7 +57,9 @@ struct SettingsView: View {
                         appDelegate?.timerService.applyMode()
                     }
 
-                    // Variance hidden for v1 — hardcoded to ±1 min in AppSettings defaults
+                    Text("A small ±1 min variance is added so the bell never feels robotic.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
