@@ -196,7 +196,7 @@ struct MoodDetailView: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            LabeledActionButton(icon: "square.and.arrow.up", label: "Export mood", color: .secondary) {
+            LabeledActionButton(icon: "arrow.up.doc", label: "Export mood", color: .secondary) {
                 exportMood()
             }
             .padding(20)
