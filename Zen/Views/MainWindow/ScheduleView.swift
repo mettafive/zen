@@ -54,6 +54,11 @@ struct ScheduleView: View {
     private let minuteTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     @ObservedObject private var settings = AppSettings.shared
+    @State private var scheduleOnboardingStep = 0
+
+    private var showScheduleOnboarding: Bool {
+        !settings.scheduleOnboardingComplete
+    }
 
     private var inactiveBehaviorBinding: Binding<String> {
         Binding(
@@ -63,6 +68,7 @@ struct ScheduleView: View {
     }
 
     var body: some View {
+        ZStack {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 // Header row
@@ -151,6 +157,11 @@ struct ScheduleView: View {
         .onDeleteCommand { deleteSelectedBlock() }
         .onExitCommand { exitPasteMode(); selectedBlockId = nil }
         .onReceive(minuteTimer) { _ in now = currentTimeInfo() }
+
+            if showScheduleOnboarding {
+                scheduleOnboardingOverlay
+            }
+        } // ZStack
     }
 
     // MARK: - Timeline Grid
@@ -228,8 +239,133 @@ struct ScheduleView: View {
                 }
                 .padding(.horizontal, 8)
             }
+
+            Text("drag into calendar")
+                .font(.system(size: 10))
+                .foregroundStyle(.quaternary)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+
             Spacer()
         }
+    }
+
+    // MARK: - Schedule Onboarding
+
+    private var scheduleOnboardingOverlay: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+
+            VStack(spacing: 20) {
+                Group {
+                    switch scheduleOnboardingStep {
+                    case 0:
+                        VStack(spacing: 14) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.secondary)
+                            Text("Schedule")
+                                .font(.system(size: 22, weight: .medium, design: .serif))
+                            Text("Set different moods for different\ntimes of day and days of the week.")
+                                .font(.system(size: 13, design: .serif))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    case 1:
+                        VStack(spacing: 14) {
+                            Image(systemName: "hand.draw")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.secondary)
+                            Text("Drag and resize")
+                                .font(.system(size: 22, weight: .medium, design: .serif))
+                            Text("Drag a mood from the sidebar into\nthe calendar. Resize by dragging the edges.")
+                                .font(.system(size: 13, design: .serif))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    case 2:
+                        VStack(spacing: 14) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.secondary)
+                            Text("Copy and paste")
+                                .font(.system(size: 22, weight: .medium, design: .serif))
+                            Text("Right-click a day to copy all blocks.\nPaste onto another day to duplicate.")
+                                .font(.system(size: 13, design: .serif))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    case 3:
+                        VStack(spacing: 14) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color(red: 0.95, green: 0.63, blue: 0.21))
+                            Text("That's it")
+                                .font(.system(size: 22, weight: .medium, design: .serif))
+                            Text("Enable the toggle above when\nyou're ready. Zen handles the rest.")
+                                .font(.system(size: 13, design: .serif))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    default: EmptyView()
+                    }
+                }
+
+                // Next / Done button
+                if scheduleOnboardingStep < 3 {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            scheduleOnboardingStep += 1
+                        }
+                    } label: {
+                        Text("Next")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.08)))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            settings.scheduleOnboardingComplete = true
+                        }
+                    } label: {
+                        Text("Got it")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.95, green: 0.63, blue: 0.21)))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Progress dots
+                HStack(spacing: 10) {
+                    ForEach(0..<4, id: \.self) { i in
+                        Circle()
+                            .fill(i <= scheduleOnboardingStep ? Color.primary : Color.primary.opacity(0.15))
+                            .frame(width: 6, height: 6)
+                    }
+                }
+                .padding(.top, 4)
+
+                // Don't show again
+                Button {
+                    settings.scheduleOnboardingComplete = true
+                } label: {
+                    Text("don't show again")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.quaternary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .transition(.opacity)
     }
 
     // MARK: - Actions

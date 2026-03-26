@@ -25,6 +25,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("inactiveBehavior") var inactiveBehavior: String = "pause" // "pause" or mood UUID
     @AppStorage("scheduleEnabled") var scheduleEnabled: Bool = false
     @AppStorage("neverShowOverrideExplanation") var neverShowOverrideExplanation: Bool = false
+    @AppStorage("scheduleOnboardingComplete") var scheduleOnboardingComplete: Bool = false
 
     private init() {}
 }
