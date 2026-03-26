@@ -351,14 +351,13 @@ private struct ScheduleBlockView: View {
 
     @State private var isHovered = false
     @State private var isDragging = false
-    @State private var bodyDragOffset: CGFloat = 0
-    @State private var verticalDragOffset: CGFloat = 0
-    @State private var leftDragOffset: CGFloat = 0
-    @State private var rightDragOffset: CGFloat = 0
     @State private var xHovered = false
+    @GestureState private var bodyDrag: CGSize = .zero
+    @GestureState private var leftDrag: CGFloat = 0
+    @GestureState private var rightDrag: CGFloat = 0
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
-    private var currentW: CGFloat { max(blockW - leftDragOffset + rightDragOffset, 20) }
+    private var currentW: CGFloat { max(blockW - leftDrag + rightDrag, 20) }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -414,9 +413,9 @@ private struct ScheduleBlockView: View {
                     .cursor(.resizeLeftRight)
                     .gesture(
                         DragGesture()
-                            .onChanged { v in
-                                isDragging = true
-                                leftDragOffset = v.translation.width
+                            .updating($leftDrag) { v, state, _ in
+                                state = v.translation.width
+                                DispatchQueue.main.async { isDragging = true }
                             }
                             .onEnded { v in
                                 let delta = snapHour(Int(v.translation.width / pph * 60))
@@ -424,7 +423,6 @@ private struct ScheduleBlockView: View {
                                 if newStart < block.endMinutes - 59 {
                                     onResize(newStart, block.endMinutes)
                                 }
-                                leftDragOffset = 0
                                 isDragging = false
                                 HapticService.playAlignment()
                             }
@@ -440,9 +438,9 @@ private struct ScheduleBlockView: View {
                     .cursor(.resizeLeftRight)
                     .gesture(
                         DragGesture()
-                            .onChanged { v in
-                                isDragging = true
-                                rightDragOffset = v.translation.width
+                            .updating($rightDrag) { v, state, _ in
+                                state = v.translation.width
+                                DispatchQueue.main.async { isDragging = true }
                             }
                             .onEnded { v in
                                 let delta = snapHour(Int(v.translation.width / pph * 60))
@@ -450,7 +448,6 @@ private struct ScheduleBlockView: View {
                                 if newEnd > block.startMinutes + 59 {
                                     onResize(block.startMinutes, newEnd)
                                 }
-                                rightDragOffset = 0
                                 isDragging = false
                                 HapticService.playAlignment()
                             }
@@ -458,7 +455,7 @@ private struct ScheduleBlockView: View {
             }
         }
         .frame(width: currentW, height: rowHeight - 8)
-        .offset(x: blockX + bodyDragOffset + leftDragOffset, y: 4 + verticalDragOffset)
+        .offset(x: blockX + bodyDrag.width + leftDrag, y: 4 + bodyDrag.height * (abs(bodyDrag.height) > 25 ? 0.6 : 0))
         .opacity(isHovered ? 1.0 : 0.85)
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
@@ -466,17 +463,9 @@ private struct ScheduleBlockView: View {
         // Body drag — free follow, snap to hour on release
         .gesture(
             DragGesture(minimumDistance: 12)
-                .onChanged { v in
-                    isDragging = true
-                    bodyDragOffset = v.translation.width
-
-                    // Vertical: resist until 25px threshold, then track
-                    let verticalRaw = v.translation.height
-                    if abs(verticalRaw) > 25 {
-                        verticalDragOffset = (verticalRaw - (verticalRaw > 0 ? 25 : -25)) * 0.6
-                    } else {
-                        verticalDragOffset = 0
-                    }
+                .updating($bodyDrag) { v, state, _ in
+                    state = v.translation
+                    DispatchQueue.main.async { isDragging = true }
                 }
                 .onEnded { v in
                     // Horizontal — snap to nearest hour
@@ -497,8 +486,6 @@ private struct ScheduleBlockView: View {
                         }
                     }
 
-                    bodyDragOffset = 0
-                    verticalDragOffset = 0
                     isDragging = false
                 }
         )
