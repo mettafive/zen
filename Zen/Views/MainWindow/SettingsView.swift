@@ -25,7 +25,6 @@ struct SettingsView: View {
                             Label("Starts at 5 min and adapts as you go", systemImage: "brain")
                             Label("Grows when you're present, shortens when you're not", systemImage: "arrow.up.arrow.down")
                             Label("Ranges between 45 seconds and 30 minutes", systemImage: "ruler")
-                            Label("Left edge = present · Right edge = not present", systemImage: "rectangle.lefthalf.filled")
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
