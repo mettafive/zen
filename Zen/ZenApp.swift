@@ -18,8 +18,10 @@ struct ZenApp: App {
         WindowGroup {
             MainContentView(appDelegate: appDelegate)
                 .environment(\.appDelegate, appDelegate)
+                .frame(minWidth: 580, minHeight: 500)
         }
         .modelContainer(sharedModelContainer)
+        .defaultSize(width: 640, height: 560)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates...") {

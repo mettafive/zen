@@ -64,7 +64,7 @@ struct MainContentView: View {
                     store.checkSchedule()
                 }
             }
-            .frame(minWidth: 500, minHeight: 400)
+            .frame(minWidth: 580, minHeight: 500)
             .overlay(alignment: .bottomLeading) {
                 if showTip && !tipDismissed {
                     HStack(spacing: 10) {
