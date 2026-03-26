@@ -350,11 +350,15 @@ private struct ScheduleBlockView: View {
     let onRowChange: (Int) -> Void // newDay
 
     @State private var isHovered = false
-    @State private var isDragging = false
     @State private var xHovered = false
     @GestureState private var bodyDrag: CGSize = .zero
     @GestureState private var leftDrag: CGFloat = 0
     @GestureState private var rightDrag: CGFloat = 0
+
+    // Derived — no @State mutation during gesture
+    private var isDragging: Bool {
+        bodyDrag != .zero || leftDrag != 0 || rightDrag != 0
+    }
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
     private var currentW: CGFloat { max(blockW - leftDrag + rightDrag, 20) }
@@ -415,7 +419,6 @@ private struct ScheduleBlockView: View {
                         DragGesture()
                             .updating($leftDrag) { v, state, _ in
                                 state = v.translation.width
-                                DispatchQueue.main.async { isDragging = true }
                             }
                             .onEnded { v in
                                 let delta = snapHour(Int(v.translation.width / pph * 60))
@@ -423,7 +426,6 @@ private struct ScheduleBlockView: View {
                                 if newStart < block.endMinutes - 59 {
                                     onResize(newStart, block.endMinutes)
                                 }
-                                isDragging = false
                                 HapticService.playAlignment()
                             }
                     )
@@ -440,7 +442,6 @@ private struct ScheduleBlockView: View {
                         DragGesture()
                             .updating($rightDrag) { v, state, _ in
                                 state = v.translation.width
-                                DispatchQueue.main.async { isDragging = true }
                             }
                             .onEnded { v in
                                 let delta = snapHour(Int(v.translation.width / pph * 60))
@@ -448,7 +449,6 @@ private struct ScheduleBlockView: View {
                                 if newEnd > block.startMinutes + 59 {
                                     onResize(block.startMinutes, newEnd)
                                 }
-                                isDragging = false
                                 HapticService.playAlignment()
                             }
                     )
@@ -465,7 +465,6 @@ private struct ScheduleBlockView: View {
             DragGesture(minimumDistance: 12)
                 .updating($bodyDrag) { v, state, _ in
                     state = v.translation
-                    DispatchQueue.main.async { isDragging = true }
                 }
                 .onEnded { v in
                     // Horizontal — snap to nearest hour
@@ -485,8 +484,6 @@ private struct ScheduleBlockView: View {
                             onRowChange(newDay)
                         }
                     }
-
-                    isDragging = false
                 }
         )
         .contextMenu {
