@@ -3,9 +3,6 @@ import AppKit
 
 struct AboutView: View {
     private let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    @State private var showFeedback = false
-    @State private var feedbackSubject = ""
-    @State private var feedbackMessage = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -58,18 +55,15 @@ struct AboutView: View {
             Spacer()
 
             VStack(spacing: 10) {
-                Button {
-                    showFeedback = true
-                } label: {
+                Link(destination: URL(string: "https://wa.me/46706195510")!) {
                     HStack(spacing: 5) {
-                        Image(systemName: "envelope")
+                        Image(systemName: "bubble.left")
                             .font(.system(size: 10))
-                        Text("Submit bug or feature request")
+                        Text("Send bug report to Lukas on WhatsApp")
                             .font(.caption)
                     }
                     .foregroundStyle(.tertiary)
                 }
-                .buttonStyle(.plain)
 
                 Text("Made with awareness by Lukas Hammarström")
                     .font(.caption)
@@ -78,34 +72,6 @@ struct AboutView: View {
             .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showFeedback) {
-            FeedbackSheet(
-                subject: $feedbackSubject,
-                message: $feedbackMessage,
-                onSend: { sendFeedback() },
-                onCancel: {
-                    showFeedback = false
-                    feedbackSubject = ""
-                    feedbackMessage = ""
-                }
-            )
-        }
     }
 
-    private func sendFeedback() {
-        let subject = feedbackSubject.trimmingCharacters(in: .whitespaces).isEmpty
-            ? "Zen Feedback"
-            : "[Zen] \(feedbackSubject.trimmingCharacters(in: .whitespaces))"
-        let body = feedbackMessage.trimmingCharacters(in: .whitespaces)
-        guard !body.isEmpty else { return }
-        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
-        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
-        if let url = URL(string: "mailto:lukas@mitthjarta.se?subject=\(encodedSubject)&body=\(encodedBody)") {
-            NSWorkspace.shared.open(url)
-        }
-        HapticService.playLevelChange()
-        showFeedback = false
-        feedbackSubject = ""
-        feedbackMessage = ""
-    }
 }
