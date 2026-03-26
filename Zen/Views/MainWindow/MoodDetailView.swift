@@ -27,6 +27,7 @@ struct MoodDetailView: View {
     @State private var editingItemIndex: Int? = nil
     @State private var searchText = ""
     @State private var showSearch = false
+    @FocusState private var searchFocused: Bool
 
     // Header editing states
     @State private var editingIcon = false
@@ -139,6 +140,7 @@ struct MoodDetailView: View {
                     TextField("Filter...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.callout)
+                        .focused($searchFocused)
                     Button {
                         searchText = ""
                         withAnimation(.easeInOut(duration: 0.2)) { showSearch = false }
@@ -385,7 +387,11 @@ struct MoodDetailView: View {
                     withAnimation(.easeInOut(duration: 0.2)) { showSearch = false }
                 }
                 withAnimation(.easeInOut(duration: 0.2)) { showSearch.toggle() }
-                if !showSearch { searchText = "" }
+                if showSearch {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { searchFocused = true }
+                } else {
+                    searchText = ""
+                }
             } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 12, weight: .medium))
