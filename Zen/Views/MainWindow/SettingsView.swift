@@ -64,7 +64,7 @@ struct SettingsView: View {
             Section("Sound") {
                 Toggle("Sound", isOn: $settings.soundEnabled)
                     .onChange(of: settings.soundEnabled) { HapticService.playGeneric() }
-                Text("Zen tones when it's time to check in.")
+                Text("Mute all sounds from Zen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

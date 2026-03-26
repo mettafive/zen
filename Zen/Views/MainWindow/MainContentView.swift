@@ -89,7 +89,7 @@ struct MainContentView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        Text("Hold your cursor at the top edge of the screen for 3 seconds to peek how much time until the next bell. (This only works if the countdown is active.)")
+                        Text("Move your cursor to the very top of your screen and hold it there. After 3 seconds of vibrations, you'll see when the next bell is due. Only works while the timer is running.")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
