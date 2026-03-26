@@ -107,7 +107,7 @@ final class TimerService {
         resetTimer()
     }
 
-    private func resetTimer() {
+    func resetTimer() {
         timeRemaining = currentInterval
         if isRunning {
             timer?.invalidate()

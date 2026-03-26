@@ -22,6 +22,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         timerService.start()
         startBodyReminders()
         startTopPeek()
+
+        // Listen for wake from sleep — reset to clean state
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(handleWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleWake() {
+        Task { @MainActor in
+            // Dismiss any stale overlays
+            edgePillarManager.stopListening()
+            breathGlowManager.dismiss()
+            toastManager.dismiss()
+            votePending = false
+
+            // Restart the timer fresh
+            timerService.resetTimer()
+            timerService.start()
+
+            // Resume peek + reminders
+            topPeekManager.startListening()
+            scheduleNextBodyReminder()
+        }
     }
 
     private func startTopPeek() {
