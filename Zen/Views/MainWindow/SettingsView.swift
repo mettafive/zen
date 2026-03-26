@@ -20,6 +20,12 @@ struct SettingsView: View {
                     appDelegate?.timerService.applyMode()
                 }
 
+                Text(settings.timerMode == "adaptive"
+                    ? "Time between bells grows when you're present, shortens when you're not."
+                    : "Bells ring at a fixed interval you choose.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 if settings.timerMode == "adaptive" {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
