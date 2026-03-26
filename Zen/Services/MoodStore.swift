@@ -395,7 +395,10 @@ final class MoodStore: ObservableObject {
     }
 
     func resetToDefaults() {
-        moods = DefaultMoods.all
+        let defaultIds = Set(DefaultMoods.all.map(\.id))
+        // Keep user-created moods, replace defaults
+        let userMoods = moods.filter { !defaultIds.contains($0.id) && !$0.isDefault }
+        moods = DefaultMoods.all + userMoods
         activeMoodId = DefaultMoods.buddhaId
         save()
     }
