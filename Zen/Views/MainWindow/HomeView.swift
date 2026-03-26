@@ -140,9 +140,14 @@ struct HomeView: View {
     // MARK: - Import Actions
 
     private func handleMoodSelect(_ mood: Mood) {
+        // Tapping already-active mood with no override → do nothing
+        if mood.id == store.activeMoodId && !store.isOverrideActive {
+            return
+        }
+
         HapticService.playLevelChange()
 
-        // Tapping active mood while override is active → clear override
+        // Tapping active mood while override is active → clear override (back to schedule)
         if mood.id == store.activeMoodId && store.isOverrideActive {
             store.clearOverride()
             return
@@ -362,13 +367,18 @@ struct MoodCard: View {
                 Text(mood.icon)
                     .font(.system(size: 32))
                 Spacer()
-                if isHovered || isActive {
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.green)
+                        .transition(.opacity)
+                } else if isHovered {
                     Button {
                         onSelect()
                     } label: {
-                        Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
+                        Image(systemName: "circle")
                             .font(.system(size: 18))
-                            .foregroundStyle(isActive ? .green : .secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .transition(.opacity)
