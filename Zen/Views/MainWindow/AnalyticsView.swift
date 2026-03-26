@@ -151,9 +151,9 @@ struct AnalyticsView: View {
 
                                 Spacer()
 
-                                Text(entry.timestamp, style: .relative)
+                                Text(entry.timestamp, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
                                     .foregroundStyle(.secondary)
-                                    .font(.caption)
+                                    .font(.system(.caption, design: .monospaced))
                             }
                         }
                     }

@@ -70,14 +70,11 @@ struct ScheduleView: View {
                     Text("Schedule")
                         .font(.title2.weight(.medium))
 
-                    Button {
-                        settings.scheduleEnabled.toggle()
-                    } label: {
-                        Text(settings.scheduleEnabled ? "deactivate schedule" : "click to activate schedule")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.plain)
+                    Toggle("", isOn: $settings.scheduleEnabled)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .scaleEffect(0.7)
+                        .tint(Color(red: 0.95, green: 0.63, blue: 0.21))
 
                     Spacer()
 
@@ -108,7 +105,7 @@ struct ScheduleView: View {
                 .padding(.bottom, 12)
 
                 timelineGrid
-                    .opacity(settings.scheduleEnabled ? 1 : 0.3)
+                    .opacity(settings.scheduleEnabled ? 1 : 0.5)
                     .allowsHitTesting(settings.scheduleEnabled)
                     .animation(.easeInOut(duration: 0.3), value: settings.scheduleEnabled)
 
@@ -147,6 +144,9 @@ struct ScheduleView: View {
 
             moodSidebar
                 .frame(width: 150)
+                .opacity(settings.scheduleEnabled ? 1 : 0.5)
+                .allowsHitTesting(settings.scheduleEnabled)
+                .animation(.easeInOut(duration: 0.3), value: settings.scheduleEnabled)
         }
         .onDeleteCommand { deleteSelectedBlock() }
         .onExitCommand { exitPasteMode(); selectedBlockId = nil }
