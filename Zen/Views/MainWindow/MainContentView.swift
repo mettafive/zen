@@ -69,6 +69,15 @@ struct MainContentView: View {
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
+            .overlay {
+                if appDelegate.needsResume {
+                    WelcomeBackOverlay {
+                        appDelegate.resumeFromInactivity()
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: appDelegate.needsResume)
             .background {
                 // Hidden buttons for Cmd+1/2/3/4 tab switching
                 VStack {
@@ -103,8 +112,17 @@ struct MainContentView: View {
                 Spacer()
             }
 
-            // Center: timer + pause/play
+            // Center: pause/play + timer
             HStack(spacing: 8) {
+                PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
+                    HapticService.playGeneric()
+                    if appDelegate.timerService.isRunning {
+                        appDelegate.timerService.pause()
+                    } else {
+                        appDelegate.timerService.resume()
+                    }
+                }
+
                 Button {
                     HapticService.playGeneric()
                     selectedTab = 1
@@ -123,15 +141,6 @@ struct MainContentView: View {
                     .fixedSize()
                 }
                 .buttonStyle(.plain)
-
-                PausePlayButton(isRunning: appDelegate.timerService.isRunning) {
-                    HapticService.playGeneric()
-                    if appDelegate.timerService.isRunning {
-                        appDelegate.timerService.pause()
-                    } else {
-                        appDelegate.timerService.resume()
-                    }
-                }
             }
 
             // Right: share
@@ -166,9 +175,9 @@ private struct PausePlayButton: View {
             action()
         } label: {
             Image(systemName: isRunning ? "pause.fill" : "play.fill")
-                .font(.system(size: 9))
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 20, height: 20)
+                .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -209,5 +218,82 @@ private struct ShareButton: View {
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .help("Copy Zen link to share with a friend")
+    }
+}
+
+// MARK: - Welcome Back Overlay
+
+private struct WelcomeBackOverlay: View {
+    let onResume: () -> Void
+    @ObservedObject private var store = MoodStore.shared
+    @State private var isHovered = false
+    @State private var appeared = false
+
+    private var randomQuote: String {
+        store.activeMood.quotes.randomElement() ?? "Be present."
+    }
+
+    var body: some View {
+        ZStack {
+            // Frosted glass background
+            Rectangle()
+                .fill(.ultraThinMaterial)
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                Text(store.activeMood.icon)
+                    .font(.system(size: 48))
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 10)
+
+                Text("Welcome back")
+                    .font(.title.weight(.light))
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 10)
+
+                Text(randomQuote)
+                    .font(.system(size: 14, weight: .light, design: .serif))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 10)
+
+                Spacer().frame(height: 8)
+
+                Button {
+                    onResume()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 12))
+                        Text("Start again")
+                            .font(.body.weight(.medium))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.green)
+                    )
+                }
+                .buttonStyle(.plain)
+                .scaleEffect(isHovered ? 1.04 : 1.0)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 10)
+                .animation(.easeOut(duration: 0.1), value: isHovered)
+                .onHover { h in isHovered = h }
+
+                Spacer()
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                appeared = true
+            }
+        }
     }
 }

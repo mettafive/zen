@@ -34,13 +34,6 @@ struct HomeView: View {
                             .font(.title2)
                             .fontWeight(.medium)
 
-                        // Resume button — shows after 3h inactivity
-                        if appDelegate?.needsResume == true {
-                            ResumeButton {
-                                appDelegate?.resumeFromInactivity()
-                            }
-                        }
-
                         Spacer()
 
                         // Import button
