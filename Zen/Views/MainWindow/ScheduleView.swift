@@ -94,7 +94,7 @@ struct ScheduleView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                         Picker("", selection: inactiveBehaviorBinding) {
-                            Text("Pause").tag("pause")
+                            Text("Pause (nothing)").tag("pause")
                             Divider()
                             ForEach(store.moods) { mood in
                                 Text("\(mood.icon) \(mood.name)").tag(mood.id.uuidString)

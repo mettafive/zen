@@ -22,7 +22,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("remindersEnabled") var remindersEnabled: Bool = true
     @AppStorage("reminderIntervalMinutes") var reminderIntervalMinutes: Double = 3
     @AppStorage("staticInterval") var staticInterval: Double = 180 // 3 minutes default
-    @AppStorage("inactiveBehavior") var inactiveBehavior: String = "pause" // "pause" or mood UUID
+    @AppStorage("inactiveBehavior") var inactiveBehavior: String = "00000000-0000-0000-0000-000000000001" // Buddha UUID, or "pause"
     @AppStorage("scheduleEnabled") var scheduleEnabled: Bool = false
     @AppStorage("neverShowOverrideExplanation") var neverShowOverrideExplanation: Bool = false
     @AppStorage("scheduleOnboardingComplete") var scheduleOnboardingComplete: Bool = false
