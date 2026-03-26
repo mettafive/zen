@@ -287,6 +287,18 @@ private struct DayRow: View {
                             HapticService.playLevelChange()
                             store.removeScheduleBlock(moodId: block.moodId, scheduleId: block.scheduleId, day: block.day)
                             if selectedBlockId == block.id { selectedBlockId = nil }
+                        },
+                        onRowChange: { newDay in
+                            guard newDay >= 1 && newDay <= 7 && newDay != day else { return }
+                            // Move block from this day to newDay
+                            let sched = store.moods.first(where: { $0.id == block.moodId })?
+                                .schedules.first(where: { $0.id == block.scheduleId })
+                            guard let s = sched else { return }
+                            store.addScheduleBlock(moodId: block.moodId, day: newDay,
+                                                   startHour: s.startHour, startMinute: s.startMinute,
+                                                   endHour: s.endHour, endMinute: s.endMinute)
+                            store.removeScheduleBlock(moodId: block.moodId, scheduleId: block.scheduleId, day: day)
+                            HapticService.playLevelChange()
                         }
                     )
                 }
@@ -334,13 +346,22 @@ private struct ScheduleBlockView: View {
     let onMove: (Int) -> Void
     let onResize: (Int, Int) -> Void
     let onDelete: () -> Void
+    let onRowChange: (Int) -> Void // newDay
 
     @State private var isHovered = false
     @State private var isDragging = false
     @State private var bodyDragOffset: CGFloat = 0
+    @State private var verticalDragOffset: CGFloat = 0
     @State private var leftDragOffset: CGFloat = 0
     @State private var rightDragOffset: CGFloat = 0
     @State private var xHovered = false
+
+    // Snapped offset — jumps in 30-min increments but with damping
+    private var snappedBodyOffset: CGFloat {
+        let minutesDelta = bodyDragOffset / pph * 60
+        let snapped = round(minutesDelta / 30) * 30
+        return snapped / 60 * pph
+    }
 
     private var color: Color { blockColors[block.moodIndex % blockColors.count] }
     private var currentW: CGFloat { max(blockW - leftDragOffset + rightDragOffset, 20) }
@@ -441,30 +462,51 @@ private struct ScheduleBlockView: View {
             }
         }
         .frame(width: currentW, height: rowHeight - 8)
-        .offset(x: blockX + bodyDragOffset + leftDragOffset, y: 4)
+        .offset(x: blockX + snappedBodyOffset + leftDragOffset, y: 4 + verticalDragOffset)
+        .animation(.easeOut(duration: 0.08), value: snappedBodyOffset)
+        .animation(.easeOut(duration: 0.1), value: verticalDragOffset)
         .opacity(isHovered ? 1.0 : 0.85)
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .onTapGesture { onSelect() }
-        // Body drag — move left/right
+        // Body drag — horizontal move + vertical row change
         .gesture(
-            DragGesture(minimumDistance: 12) // higher threshold so X button works
+            DragGesture(minimumDistance: 12)
                 .onChanged { v in
                     isDragging = true
                     bodyDragOffset = v.translation.width
+
+                    // Vertical: resist until 25px threshold, then track
+                    let verticalRaw = v.translation.height
+                    if abs(verticalRaw) > 25 {
+                        verticalDragOffset = (verticalRaw - (verticalRaw > 0 ? 25 : -25)) * 0.6
+                    } else {
+                        verticalDragOffset = 0
+                    }
                 }
                 .onEnded { v in
-                    let delta = snap30(Int(v.translation.width / pph * 60))
+                    // Horizontal — commit snapped position
+                    let minutesDelta = v.translation.width / pph * 60
+                    let delta = Int(round(minutesDelta / 30)) * 30
                     let displayStart = toDisplayMinutes(block.startMinutes)
                     let dur = block.endMinutes - block.startMinutes
                     let newDisplayStart = max(0, min(totalMinutesInDay - dur, displayStart + delta))
                     onMove(snap30(newDisplayStart))
+
+                    // Vertical — if dragged far enough, move to another row
+                    let rowShift = Int(round(v.translation.height / rowHeight))
+                    if rowShift != 0 {
+                        let newDay = block.day + rowShift
+                        if newDay >= 1 && newDay <= 7 {
+                            onRowChange(newDay)
+                        }
+                    }
+
                     bodyDragOffset = 0
+                    verticalDragOffset = 0
                     isDragging = false
                 }
         )
-        // Cross-row drag
-        .draggable("move:\(block.moodId):\(block.scheduleId):\(block.day)")
         .contextMenu {
             Button("Delete", role: .destructive) { onDelete() }
         }
