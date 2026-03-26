@@ -6,6 +6,15 @@ struct MenuBarMenu: View {
     @ObservedObject private var store = MoodStore.shared
 
     var body: some View {
+        if appDelegate?.needsResume == true {
+            Button("▶ Resume Zen") {
+                HapticService.playLevelChange()
+                appDelegate?.resumeFromInactivity()
+            }
+
+            Divider()
+        }
+
         ForEach(store.moods) { (mood: Mood) in
             Button {
                 HapticService.playGeneric()

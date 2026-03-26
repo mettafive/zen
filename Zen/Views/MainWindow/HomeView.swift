@@ -13,7 +13,8 @@ struct HomeView: View {
     @State private var importError: String? = nil
     @State private var showImportError = false
     @State private var showFeedback = false
-    @State private var feedbackText = ""
+    @State private var feedbackSubject = ""
+    @State private var feedbackMessage = ""
     @State private var feedbackSent = false
 
     enum ImportState: Equatable {
@@ -21,6 +22,8 @@ struct HomeView: View {
         case importing
         case success(String) // mood name
     }
+
+    @Environment(\.appDelegate) private var appDelegate
 
     var body: some View {
         NavigationStack {
@@ -30,6 +33,14 @@ struct HomeView: View {
                         Text("Moods")
                             .font(.title2)
                             .fontWeight(.medium)
+
+                        // Resume button — shows after 3h inactivity
+                        if appDelegate?.needsResume == true {
+                            ResumeButton {
+                                appDelegate?.resumeFromInactivity()
+                            }
+                        }
+
                         Spacer()
 
                         // Import button
@@ -61,72 +72,24 @@ struct HomeView: View {
                     }
                     .padding(20)
 
-                    // Feedback section
+                    // Feedback button
                     HStack {
                         Spacer()
-                        if showFeedback {
-                            VStack(alignment: .trailing, spacing: 10) {
-                                TextEditor(text: $feedbackText)
-                                    .font(.callout)
-                                    .frame(maxWidth: 400, minHeight: 80, maxHeight: 120)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                                HStack(spacing: 8) {
-                                    if feedbackSent {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(.green)
-                                            Text("Sent!")
-                                                .foregroundStyle(.green)
-                                        }
-                                        .font(.caption)
-                                        .transition(.opacity)
-                                    }
-
-                                    Button("Cancel") {
-                                        withAnimation(.easeOut(duration: 0.15)) {
-                                            showFeedback = false
-                                            feedbackText = ""
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundStyle(.secondary)
+                        Button {
+                            HapticService.playGeneric()
+                            showFeedback = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "envelope")
+                                    .font(.system(size: 10))
+                                Text("Submit bug or feature request")
                                     .font(.caption)
-
-                                    Button("Send") {
-                                        sendFeedback()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .controlSize(.small)
-                                    .disabled(feedbackText.trimmingCharacters(in: .whitespaces).isEmpty)
-                                }
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        } else {
-                            Button {
-                                HapticService.playGeneric()
-                                withAnimation(.easeOut(duration: 0.15)) {
-                                    showFeedback = true
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "envelope")
-                                        .font(.system(size: 10))
-                                    Text("Submit bug or feature request")
-                                        .font(.caption)
-                                }
-                                .foregroundStyle(.tertiary)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
+                            .foregroundStyle(.tertiary)
                         }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
                 }
                 .onDrop(of: [.fileURL], isTargeted: nil) { providers in
@@ -154,17 +117,30 @@ struct HomeView: View {
             } message: {
                 Text(importError ?? "Could not import this file. Make sure it's a valid .zenmood file.")
             }
+            .sheet(isPresented: $showFeedback) {
+                FeedbackSheet(
+                    subject: $feedbackSubject,
+                    message: $feedbackMessage,
+                    onSend: { sendFeedback() },
+                    onCancel: {
+                        showFeedback = false
+                        feedbackSubject = ""
+                        feedbackMessage = ""
+                    }
+                )
+            }
         }
     }
 
     // MARK: - Feedback
 
     private func sendFeedback() {
-        let text = feedbackText.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty else { return }
+        let subject = feedbackSubject.trimmingCharacters(in: .whitespaces).isEmpty
+            ? "Zen Feedback"
+            : "[Zen] \(feedbackSubject.trimmingCharacters(in: .whitespaces))"
+        let body = feedbackMessage.trimmingCharacters(in: .whitespaces)
+        guard !body.isEmpty else { return }
 
-        let subject = "Zen Feedback"
-        let body = text
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
         let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
 
@@ -173,16 +149,9 @@ struct HomeView: View {
         }
 
         HapticService.playLevelChange()
-        withAnimation(.easeOut(duration: 0.2)) {
-            feedbackSent = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                showFeedback = false
-                feedbackText = ""
-                feedbackSent = false
-            }
-        }
+        showFeedback = false
+        feedbackSubject = ""
+        feedbackMessage = ""
     }
 
     // MARK: - Import Overlay
@@ -279,6 +248,45 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Resume Button
+
+private struct ResumeButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+    @State private var isVisible = true
+
+    var body: some View {
+        if isVisible {
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    isVisible = false
+                }
+                action()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 11))
+                    Text("Resume")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.green)
+                )
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovered ? 1.0 : 0.85)
+            .scaleEffect(isHovered ? 1.03 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: isHovered)
+            .onHover { h in isHovered = h }
+            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        }
+    }
+}
+
 // MARK: - Import Button
 
 private struct ImportButton: View {
@@ -308,6 +316,63 @@ private struct ImportButton: View {
         .animation(.easeOut(duration: 0.1), value: isHovered)
         .onHover { h in isHovered = h }
         .help("Import a .zenmood file")
+    }
+}
+
+// MARK: - Feedback Sheet
+
+private struct FeedbackSheet: View {
+    @Binding var subject: String
+    @Binding var message: String
+    let onSend: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Submit Feedback")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Subject")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Bug report, feature request, idea...", text: $subject)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Message")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: $message)
+                    .font(.callout)
+                    .frame(minHeight: 100)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+
+            HStack {
+                Button("Cancel") {
+                    onCancel()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("Send") {
+                    onSend()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(message.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(24)
+        .frame(width: 400)
+        .frame(minHeight: 280)
     }
 }
 

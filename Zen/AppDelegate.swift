@@ -10,9 +10,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let topPeekManager = TopPeekManager()
     var presenceStore: PresenceStore?
     @Published var votePending = false
+    @Published var needsResume = false
 
     private var modelContainer: ModelContainer?
     private var bodyReminderTimer: Timer?
+    private var lastActivityDate = Date()
+    private var inactivityTimer: Timer?
+    private let inactivityThreshold: TimeInterval = 3 * 60 * 60 // 3 hours
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         CrashReporter.install()
@@ -23,13 +27,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         startBodyReminders()
         startTopPeek()
 
-        // Listen for wake from sleep — reset to clean state
+        // Listen for wake from sleep
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
             selector: #selector(handleWake),
             name: NSWorkspace.didWakeNotification,
             object: nil
         )
+
+        // Track activity for auto-pause
+        startInactivityTracker()
     }
 
     @objc private func handleWake() {
@@ -40,14 +47,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             toastManager.dismiss()
             votePending = false
 
-            // Restart the timer fresh
-            timerService.resetTimer()
-            timerService.start()
-
-            // Resume peek + reminders
-            topPeekManager.startListening()
-            scheduleNextBodyReminder()
+            // Check how long we were away
+            let elapsed = Date().timeIntervalSince(lastActivityDate)
+            if elapsed >= inactivityThreshold {
+                // Been away 3+ hours — require manual resume
+                timerService.pause()
+                topPeekManager.stopListening()
+                pauseBodyReminders()
+                needsResume = true
+            } else {
+                // Short sleep — restart automatically
+                timerService.resetTimer()
+                timerService.start()
+                topPeekManager.startListening()
+                scheduleNextBodyReminder()
+                lastActivityDate = Date()
+            }
         }
+    }
+
+    // MARK: - Inactivity Tracking
+
+    private func startInactivityTracker() {
+        // Check every 10 minutes
+        inactivityTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, !self.needsResume else { return }
+                let elapsed = Date().timeIntervalSince(self.lastActivityDate)
+                if elapsed >= self.inactivityThreshold {
+                    self.timerService.pause()
+                    self.topPeekManager.stopListening()
+                    self.pauseBodyReminders()
+                    self.edgePillarManager.stopListening()
+                    self.breathGlowManager.dismiss()
+                    self.toastManager.dismiss()
+                    self.votePending = false
+                    self.needsResume = true
+                }
+            }
+        }
+
+        // Track mouse/keyboard activity
+        NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .keyDown]) { [weak self] _ in
+            Task { @MainActor in
+                self?.lastActivityDate = Date()
+            }
+        }
+    }
+
+    func resumeFromInactivity() {
+        HapticService.playLevelChange()
+        needsResume = false
+        lastActivityDate = Date()
+        timerService.resetTimer()
+        timerService.start()
+        topPeekManager.startListening()
+        scheduleNextBodyReminder()
     }
 
     private func startTopPeek() {
