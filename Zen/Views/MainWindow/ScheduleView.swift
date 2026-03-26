@@ -179,7 +179,8 @@ struct ScheduleView: View {
 
             // Outside blocks tooltip
             if showOutsideBlocksHelp {
-                Color.black.opacity(0.01)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
                     .ignoresSafeArea()
                     .onTapGesture { showOutsideBlocksHelp = false }
 
@@ -200,7 +201,7 @@ struct ScheduleView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    Text("When the current time doesn't fall inside any block on the calendar, Zen uses this setting. Choose a mood to keep its quotes and reminders running, or pause to stop entirely.")
+                    Text("This controls what Zen does during hours with no block scheduled. For example, if you have Morning set from 6–10 and Evening from 17–22, what should happen at 14:00?\n\nPick a mood to keep its quotes and reminders active, or choose pause to go quiet.")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineSpacing(2)
