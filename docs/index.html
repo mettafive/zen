@@ -601,17 +601,17 @@
     <!-- Hero -->
     <section class="hero" id="hero">
         <div class="container">
-            <span class="tag animate-in">macOS App</span>
+            <span class="tag animate-in" data-delay="0">macOS App</span>
 
-            <div class="hero-icon-wrap animate-in" id="heroIcon">
+            <div class="hero-icon-wrap animate-in" data-delay="150" id="heroIcon">
                 <img src="logo.png" alt="Zen" class="hero-icon">
             </div>
 
-            <h1 class="animate-in">Zen</h1>
+            <h1 class="animate-in" data-delay="300">Zen</h1>
 
-            <p class="hero-tagline animate-in">A gentle companion that helps you stay present while you work.</p>
+            <p class="hero-tagline animate-in" data-delay="450">A gentle companion that helps you stay present while you work.</p>
 
-            <a href="https://github.com/mettafive/zen/releases/latest/download/Zen-1.0.0.dmg" class="download-btn animate-in">
+            <a href="https://github.com/mettafive/zen/releases/latest/download/Zen-1.0.0.dmg" class="download-btn animate-in" data-delay="600">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
@@ -619,7 +619,7 @@
                 </svg>
                 Download for Mac
             </a>
-            <p class="platform animate-in">macOS 14.0+ &middot; Free</p>
+            <p class="platform animate-in" data-delay="700">macOS 14.0+ &middot; Free</p>
         </div>
     </section>
 
@@ -751,10 +751,12 @@
         }, { threshold: 0.1 });
 
         document.querySelectorAll('.animate-in').forEach((el, i) => {
-            // Stagger siblings
-            const siblings = Array.from(el.parentElement.querySelectorAll('.animate-in'));
-            const index = siblings.indexOf(el);
-            el.dataset.delay = index * 80;
+            // Only auto-stagger if no explicit delay set
+            if (!el.dataset.delay) {
+                const siblings = Array.from(el.parentElement.querySelectorAll('.animate-in:not([data-delay])'));
+                const index = siblings.indexOf(el);
+                el.dataset.delay = index * 80;
+            }
             observer.observe(el);
         });
 
