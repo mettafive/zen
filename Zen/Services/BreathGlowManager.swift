@@ -32,7 +32,7 @@ final class BreathGlowManager {
         }
     }
 
-    func showQuotePill() {
+    func showQuotePill(customText: String? = nil) {
         dismissQuote()
 
         guard let screen = NSScreen.main else { return }
@@ -59,7 +59,7 @@ final class BreathGlowManager {
         qPanel.ignoresMouseEvents = true
         qPanel.hidesOnDeactivate = false
 
-        let quote = MoodStore.shared.nextQuote()
+        let quote = customText ?? MoodStore.shared.nextQuote()
         pillController = QuotePillController()
 
         let pillView = QuotePillView(text: quote, controller: pillController)
@@ -124,7 +124,7 @@ final class BreathGlowManager {
         glowPanel = nil
     }
 
-    private func dismissQuote() {
+    func dismissQuote() {
         if let p = quotePanel { PanelHoverTracker.shared.unregister(p) }
         quotePanel?.close()
         quotePanel = nil

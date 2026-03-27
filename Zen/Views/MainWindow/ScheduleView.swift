@@ -58,7 +58,7 @@ struct ScheduleView: View {
     @State private var showOutsideBlocksHelp = false
 
     private var showScheduleOnboarding: Bool {
-        !settings.scheduleOnboardingComplete
+        !settings.scheduleOnboardingComplete && settings.appTourComplete
     }
 
     private var inactiveBehaviorBinding: Binding<String> {

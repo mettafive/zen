@@ -120,28 +120,32 @@ struct AnalyticsView: View {
                         title: "Check-ins",
                         value: "\(todayEntries.count)",
                         subtitle: "today",
-                        icon: "checkmark.circle"
+                        icon: "checkmark.circle",
+                        description: "Total check-ins completed today"
                     )
 
                     StatCard(
                         title: "Presence",
                         value: todayEntries.isEmpty ? "—" : "\(Int(todayPresenceRate * 100))%",
                         subtitle: "rate today",
-                        icon: "brain.head.profile"
+                        icon: "brain.head.profile",
+                        description: "How often you were present today"
                     )
 
                     StatCard(
                         title: "Streak",
                         value: "\(currentStreak)",
                         subtitle: "current",
-                        icon: "flame"
+                        icon: "flame",
+                        description: "Consecutive present check-ins"
                     )
 
                     StatCard(
                         title: "Quotes",
                         value: "\(allEntries.count)",
                         subtitle: "all time",
-                        icon: "quote.closing"
+                        icon: "quote.closing",
+                        description: "Total check-ins since you started"
                     )
                 }
 
@@ -379,6 +383,7 @@ struct StatCard: View {
     let value: String
     let subtitle: String
     let icon: String
+    var description: String = ""
 
     var body: some View {
         VStack(spacing: 6) {
@@ -393,6 +398,15 @@ struct StatCard: View {
             Text(subtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            if !description.isEmpty {
+                Text(description)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.horizontal, 6)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)

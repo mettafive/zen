@@ -43,6 +43,7 @@ final class EdgePillarManager {
     var onVoteRecorded: ((Bool) -> Void)?
     var onEdgeEngaged: (() -> Void)?
     var onEdgeDisengaged: (() -> Void)?
+    var allowedSide: EdgeSide? = nil
     private var wasEngaged = false
 
     enum EdgeSide {
@@ -82,6 +83,15 @@ final class EdgePillarManager {
         dismissPanel(&rightPanel)
     }
 
+    func resetFillState() {
+        leftFill = 0; leftVelocity = 0; leftLingerTime = 0
+        rightFill = 0; rightVelocity = 0; rightLingerTime = 0
+        voteCompleted = false
+        isAtLeft = false; isAtRight = false
+        dismissPanel(&leftPanel)
+        dismissPanel(&rightPanel)
+    }
+
     // MARK: - Mouse tracking
 
     private func handleMousePosition() {
@@ -91,8 +101,8 @@ final class EdgePillarManager {
         guard let screen = NSScreen.main else { return }
         let frame = screen.frame
 
-        let atLeft = mouseX <= frame.minX + edgeThreshold
-        let atRight = mouseX >= frame.maxX - edgeThreshold
+        let atLeft = (allowedSide == nil || allowedSide == .left) && mouseX <= frame.minX + edgeThreshold
+        let atRight = (allowedSide == nil || allowedSide == .right) && mouseX >= frame.maxX - edgeThreshold
 
         // Left edge
         if atLeft && !isAtLeft {

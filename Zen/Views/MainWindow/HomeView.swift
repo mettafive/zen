@@ -408,13 +408,6 @@ struct MoodCard: View {
             Spacer(minLength: 0)
 
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 12) {
-                    Label("\(mood.quotes.count)", systemImage: "quote.closing")
-                    Label("\(mood.reminders.count)", systemImage: "bell")
-                }
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-
                 if mood.hasActiveSchedules {
                     ForEach(mood.schedules.prefix(2)) { (sched: MoodSchedule) in
                         HStack(spacing: 4) {
@@ -432,10 +425,6 @@ struct MoodCard: View {
                             .font(.system(size: 10))
                             .foregroundStyle(.blue.opacity(0.5))
                     }
-                } else {
-                    Text("No schedule")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.quaternary)
                 }
             }
         }

@@ -10,6 +10,7 @@ struct MainContentView: View {
     @State private var showCopiedToast = false
     @State private var showTip = false
     @State private var tipDismissed = false
+    @State private var showAppTour = false
     @State private var tabContentVisible = true
 
     init(appDelegate: AppDelegate) {
@@ -43,15 +44,15 @@ struct MainContentView: View {
                         }
                         .tag(1)
 
-                    AnalyticsView()
-                        .tabItem {
-                            Label("History", systemImage: "chart.bar")
-                        }
-                        .tag(2)
-
                     ScheduleView()
                         .tabItem {
                             Label("Schedule", systemImage: "calendar")
+                        }
+                        .tag(2)
+
+                    AnalyticsView()
+                        .tabItem {
+                            Label("History", systemImage: "chart.bar")
                         }
                         .tag(3)
 
@@ -140,25 +141,47 @@ struct MainContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.4), value: appDelegate.needsResume)
-            .background {
-                // Hidden buttons for Cmd+1/2/3/4 tab switching
-                VStack {
-                    Button("") { selectedTab = 0 }
-                        .keyboardShortcut("1", modifiers: .command)
-                    Button("") { selectedTab = 1 }
-                        .keyboardShortcut("2", modifiers: .command)
-                    Button("") { selectedTab = 2 }
-                        .keyboardShortcut("3", modifiers: .command)
-                    Button("") { selectedTab = 3 }
-                        .keyboardShortcut("4", modifiers: .command)
-                    Button("") { selectedTab = 4 }
-                        .keyboardShortcut("5", modifiers: .command)
+            .overlay {
+                if showAppTour {
+                    AppTourOverlay(selectedTab: $selectedTab) {
+                        AppSettings.shared.appTourComplete = true
+                        withAnimation(.easeOut(duration: 0.3)) { showAppTour = false }
+                        appDelegate.startTimerAfterTour()
+                    }
                 }
-                .opacity(0)
-                .allowsHitTesting(false)
+            }
+            .animation(.easeInOut(duration: 0.4), value: showAppTour)
+            .onAppear {
+                if settings.voteTutorialComplete && !settings.appTourComplete && settings.onboardingComplete {
+                    showAppTour = true
+                }
+            }
+            .onChange(of: settings.voteTutorialComplete) {
+                if settings.voteTutorialComplete && !settings.appTourComplete {
+                    showAppTour = true
+                }
+            }
+            .background {
+                if !showAppTour {
+                    VStack {
+                        Button("") { selectedTab = 0 }
+                            .keyboardShortcut("1", modifiers: .command)
+                        Button("") { selectedTab = 1 }
+                            .keyboardShortcut("2", modifiers: .command)
+                        Button("") { selectedTab = 2 }
+                            .keyboardShortcut("3", modifiers: .command)
+                        Button("") { selectedTab = 3 }
+                            .keyboardShortcut("4", modifiers: .command)
+                        Button("") { selectedTab = 4 }
+                            .keyboardShortcut("5", modifiers: .command)
+                    }
+                    .opacity(0)
+                    .allowsHitTesting(false)
+                }
             }
             .task {
                 guard !UserDefaults.standard.bool(forKey: "tipShown") else { return }
+                guard AppSettings.shared.appTourComplete else { return }
                 try? await Task.sleep(for: .seconds(300)) // 5 minutes
                 guard !Task.isCancelled else { return }
                 UserDefaults.standard.set(true, forKey: "tipShown")

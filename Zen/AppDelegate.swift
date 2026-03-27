@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private let inactivityThreshold: TimeInterval = 3 * 60 * 60 // 3 hours
     private var healthTimer: Timer?
     private var settingsCancellables = Set<AnyCancellable>()
+    private var voteTutorialManager: VoteTutorialManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         CrashReporter.install()
@@ -165,6 +166,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func startAllServices() {
+        if !AppSettings.shared.voteTutorialComplete {
+            startVoteTutorial()
+            return
+        }
+        if !AppSettings.shared.appTourComplete {
+            // Tour overlay in MainContentView will handle this
+            return
+        }
+        timerService.start()
+        startBodyReminders()
+        startTopPeek()
+    }
+
+    func startTimerAfterTour() {
+        timerService.resetToBase()
         timerService.start()
         startBodyReminders()
         startTopPeek()
@@ -186,9 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             // Screen breathes with a quote in the center
             self.breathGlowManager.breathe(withQuote: true)
 
-            // Pause peek + body reminders during voting
+            // Pause peek during voting (reminders pause themselves via inVoting check)
             self.topPeekManager.stopListening()
-            self.pauseBodyReminders()
 
             // Start listening for edge interaction (invisible until user goes to edge)
             self.edgePillarManager.startListening()
@@ -208,6 +223,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
     }
 
+    private func startVoteTutorial() {
+        topPeekManager.stopListening()
+        pauseBodyReminders()
+
+        let tutorial = VoteTutorialManager()
+        self.voteTutorialManager = tutorial
+
+        tutorial.onComplete = { [weak self] in
+            guard let self else { return }
+            self.voteTutorialManager = nil
+            // If tour not complete, MainContentView will show it and start timer when done
+            guard AppSettings.shared.appTourComplete else { return }
+            self.timerService.resetToBase()
+            self.timerService.start()
+            self.topPeekManager.startListening()
+            self.scheduleNextBodyReminder()
+        }
+
+        tutorial.start(
+            edgePillarManager: edgePillarManager,
+            breathGlowManager: breathGlowManager
+        )
+    }
+
     func recordVote(wasPresent: Bool) {
         breathGlowManager.dismissGlow()
         let interval = Int(timerService.currentInterval)
@@ -220,9 +259,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // Tell the quote pill to start its countdown
         breathGlowManager.onVoteCompleted()
 
-        // Resume top peek + body reminders
+        // Resume top peek (reminders run independently)
         topPeekManager.startListening()
-        scheduleNextBodyReminder()
     }
 
     func skipVote() {

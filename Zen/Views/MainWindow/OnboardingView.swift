@@ -157,7 +157,7 @@ struct OnboardingView: View {
                     setLaunchAtLogin(launchAtLogin)
                 }
 
-                primaryButton("Get Started") {
+                primaryButton("Start Guide") {
                     AppSettings.shared.onboardingComplete = true
                     appDelegate?.startAllServices()
                     onComplete()
