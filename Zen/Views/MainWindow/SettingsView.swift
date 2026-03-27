@@ -83,8 +83,9 @@ struct SettingsView: View {
                         Text("1 min").tag(1.0)
                         Text("2 min").tag(2.0)
                         Text("3 min").tag(3.0)
-                        Text("4 min").tag(4.0)
                         Text("5 min").tag(5.0)
+                        Text("10 min").tag(10.0)
+                        Text("15 min").tag(15.0)
                     }
                     .help("How often reminders appear between check-ins.")
                 }
@@ -173,7 +174,7 @@ struct SettingsView: View {
         settings.staticVarianceEnabled = true
         settings.staticVarianceMinutes = 1
         settings.remindersEnabled = true
-        settings.reminderIntervalMinutes = 3
+        settings.reminderIntervalMinutes = 10
         settings.glowTheme = "orange"
         settings.quoteOrder = "random"
         appDelegate?.timerService.resetToBase()

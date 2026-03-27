@@ -20,7 +20,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("quoteOrder") var quoteOrder: String = "random" // "random" or "sequential"
     @AppStorage("glowTheme") var glowTheme: String = "orange" // "orange" or "white"
     @AppStorage("remindersEnabled") var remindersEnabled: Bool = true
-    @AppStorage("reminderIntervalMinutes") var reminderIntervalMinutes: Double = 3
+    @AppStorage("reminderIntervalMinutes") var reminderIntervalMinutes: Double = 10
     @AppStorage("staticInterval") var staticInterval: Double = 180 // 3 minutes default
     @AppStorage("inactiveBehavior") var inactiveBehavior: String = "00000000-0000-0000-0000-000000000001" // Buddha UUID, or "pause"
     @AppStorage("scheduleEnabled") var scheduleEnabled: Bool = false
