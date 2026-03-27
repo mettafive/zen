@@ -91,11 +91,12 @@ struct BodyReminderView: View {
             shadowOpacity: 1.0,
             lineProgress: 0,
             lineVisible: false,
-            showShimmer: false
+            showShimmer: false,
+            forceWhite: true
         ) {
             Text(text)
                 .font(ZenPillStyle.textFont)
-                .foregroundStyle(ZenPillStyle.textColor)
+                .foregroundStyle(Color.black.opacity(0.5))
                 .lineLimit(1)
                 .padding(.horizontal, 32)
         }

@@ -24,10 +24,11 @@ struct ZenPillView<Content: View>: View {
     let lineVisible: Bool
     let showShimmer: Bool
     var pillHeight: CGFloat? = nil
+    var forceWhite: Bool = false
     @ViewBuilder let content: () -> Content
 
     private let cr = ZenPillStyle.cornerRadius
-    private var isOrange: Bool { ZenPillStyle.isOrangeTheme }
+    private var isOrange: Bool { forceWhite ? false : ZenPillStyle.isOrangeTheme }
 
     @State private var shimmerAngle: Angle = .zero
 
