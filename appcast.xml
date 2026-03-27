@@ -6,6 +6,31 @@
         <description>Zen app updates</description>
         <language>en</language>
         <item>
+            <title>Version 1.1.0</title>
+            <sparkle:version>1.1.0</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>Zen 1.1.0</h2>
+                <ul>
+                    <li>Full onboarding: vote tutorial with breathing glow and guided edge practice</li>
+                    <li>App tour walkthrough of all tabs</li>
+                    <li>Independent reminders that don't reset on check-in</li>
+                    <li>Reminder countdown in settings with instant interval changes</li>
+                    <li>Wider default window</li>
+                    <li>Schedule enabled by default</li>
+                    <li>Custom DMG installer with drag-to-Applications</li>
+                </ul>
+            ]]></description>
+            <pubDate>Thu, 27 Mar 2026 12:00:00 +0700</pubDate>
+            <enclosure
+                url="https://github.com/mettafive/zen/releases/download/v1.1.0/Zen-1.1.0.dmg"
+                type="application/octet-stream"
+                sparkle:edSignature="DG+OMrDdgMFeDJjAv0udhT7ewbG2RSo9nYaRBxrYMhmrL8BbFuNYL6PD45VpNo+fZhuGx0IDzUnEOQpZVTAPBw=="
+                length="2432127"
+            />
+        </item>
+        <item>
             <title>Version 1.0.0</title>
             <sparkle:version>1.0.0</sparkle:version>
             <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
