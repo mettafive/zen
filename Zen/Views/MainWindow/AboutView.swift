@@ -41,15 +41,15 @@ struct AboutView: View {
                     .frame(maxWidth: 360)
 
                 // Features
-                VStack(alignment: .leading, spacing: 6) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     Label("Adaptive & static timer", systemImage: "timer")
                     Label("Mood themes with quotes", systemImage: "quote.closing")
                     Label("Reminders between check-ins", systemImage: "bell")
                     Label("Schedule by day", systemImage: "calendar")
-                    Label("Presence analytics", systemImage: "chart.bar")
                 }
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+                .frame(maxWidth: 340)
             }
 
             Spacer()

@@ -44,7 +44,7 @@ struct MainContentView: View {
 
                     AnalyticsView()
                         .tabItem {
-                            Label("Analytics", systemImage: "chart.bar")
+                            Label("History", systemImage: "chart.bar")
                         }
                         .tag(2)
 
