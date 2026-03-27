@@ -38,34 +38,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             object: nil
         )
 
+        // Also restart on app becoming active (backup for lid close/open)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+
         // Track activity for auto-pause
         startInactivityTracker()
     }
 
     @objc private func handleWake() {
         Task { @MainActor in
-            // Dismiss any stale overlays
-            edgePillarManager.stopListening()
-            breathGlowManager.dismiss()
-            toastManager.dismiss()
-            votePending = false
+            restoreAfterSleep()
+        }
+    }
 
-            // Check how long we were away
-            let elapsed = Date().timeIntervalSince(lastActivityDate)
-            if elapsed >= inactivityThreshold {
-                // Been away 3+ hours — require manual resume
-                timerService.pause()
-                topPeekManager.stopListening()
-                pauseBodyReminders()
-                needsResume = true
-            } else {
-                // Short sleep — restart automatically
-                timerService.resetTimer()
-                timerService.start()
-                topPeekManager.startListening()
-                scheduleNextBodyReminder()
-                lastActivityDate = Date()
-            }
+    @objc private func handleBecomeActive() {
+        Task { @MainActor in
+            restoreAfterSleep()
+        }
+    }
+
+    private func restoreAfterSleep() {
+        // Dismiss any stale overlays
+        edgePillarManager.stopListening()
+        breathGlowManager.dismiss()
+        toastManager.dismiss()
+        votePending = false
+
+        guard AppSettings.shared.onboardingComplete else { return }
+
+        // Check how long we were away
+        let elapsed = Date().timeIntervalSince(lastActivityDate)
+        if elapsed >= inactivityThreshold {
+            // Been away 3+ hours — require manual resume
+            timerService.pause()
+            topPeekManager.stopListening()
+            pauseBodyReminders()
+            needsResume = true
+        } else {
+            // Short sleep — force restart the timer (old timer is dead after sleep)
+            timerService.pause()
+            timerService.resume()
+            topPeekManager.startListening()
+            scheduleNextBodyReminder()
+            lastActivityDate = Date()
         }
     }
 
