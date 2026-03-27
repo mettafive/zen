@@ -167,11 +167,6 @@ struct MoodDetailView: View {
 
             Spacer(minLength: 0)
 
-            // Reminder countdown
-            if selectedTab == 1 && settings.remindersEnabled {
-                ReminderCountdown()
-            }
-
             // Reminders disabled notice
             if selectedTab == 1 && !settings.remindersEnabled {
                 HStack(spacing: 6) {
@@ -769,7 +764,7 @@ private struct HoverEditField: View {
 
 // MARK: - Reminder Countdown
 
-private struct ReminderCountdown: View {
+struct ReminderCountdown: View {
     @Environment(\.appDelegate) private var appDelegate
     @State private var now = Date()
 

@@ -74,9 +74,13 @@ struct SettingsView: View {
             Section("Reminders") {
                 Toggle("Reminders", isOn: $settings.remindersEnabled)
                     .onChange(of: settings.remindersEnabled) { HapticService.playGeneric() }
-                Text("Gentle nudges between check-ins from your active mood.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("Gentle nudges between check-ins from your active mood.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    ReminderCountdown()
+                }
 
                 if settings.remindersEnabled {
                     Picker("Every", selection: $settings.reminderIntervalMinutes) {

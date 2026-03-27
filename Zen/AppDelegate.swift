@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftData
 
 @MainActor
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var inactivityTimer: Timer?
     private let inactivityThreshold: TimeInterval = 3 * 60 * 60 // 3 hours
     private var healthTimer: Timer?
+    private var settingsCancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         CrashReporter.install()
@@ -30,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             startAllServices()
         }
         startHealthCheck()
+        observeReminderSettings()
 
         // Track activity for auto-pause
         startInactivityTracker()
@@ -235,6 +238,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     // MARK: - Body Awareness Reminders
 
+    private func observeReminderSettings() {
+        UserDefaults.standard.publisher(for: \.reminderIntervalMinutes)
+            .dropFirst()
+            .sink { [weak self] _ in self?.restartBodyReminders() }
+            .store(in: &settingsCancellables)
+        UserDefaults.standard.publisher(for: \.remindersEnabled)
+            .dropFirst()
+            .sink { [weak self] enabled in
+                if enabled { self?.restartBodyReminders() } else { self?.pauseBodyReminders() }
+            }
+            .store(in: &settingsCancellables)
+    }
+
+    private func restartBodyReminders() {
+        bodyReminderTimer?.invalidate()
+        bodyReminderTimer = nil
+        scheduleNextBodyReminder()
+    }
+
     private func startBodyReminders() {
         scheduleNextBodyReminder()
     }
@@ -280,5 +302,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         SoundService.shared.playSound(id: MoodStore.shared.activeMood.reminderSound)
         toastManager.showBodyReminder()
         scheduleNextBodyReminder()
+    }
+}
+
+extension UserDefaults {
+    @objc var reminderIntervalMinutes: Double {
+        double(forKey: "reminderIntervalMinutes")
+    }
+    @objc var remindersEnabled: Bool {
+        bool(forKey: "remindersEnabled")
     }
 }
