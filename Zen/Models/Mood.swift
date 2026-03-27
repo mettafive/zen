@@ -58,7 +58,7 @@ struct Mood: Identifiable, Codable, Hashable {
     var quoteSound: String
     var reminderSound: String
 
-    init(id: UUID, name: String, icon: String, subtitle: String, quotes: [String], reminders: [String], isDefault: Bool, schedules: [MoodSchedule] = [], quoteSound: String = "singing-bowl", reminderSound: String = "soft-tap") {
+    init(id: UUID, name: String, icon: String, subtitle: String, quotes: [String], reminders: [String], isDefault: Bool, schedules: [MoodSchedule] = [], quoteSound: String = "singing-bowl", reminderSound: String = "silence") {
         self.id = id
         self.name = name
         self.icon = icon
@@ -112,7 +112,7 @@ struct Mood: Identifiable, Codable, Hashable {
             schedules = []
         }
         quoteSound = (try? container.decodeIfPresent(String.self, forKey: .quoteSound)) ?? "singing-bowl"
-        reminderSound = (try? container.decodeIfPresent(String.self, forKey: .reminderSound)) ?? "soft-tap"
+        reminderSound = (try? container.decodeIfPresent(String.self, forKey: .reminderSound)) ?? "silence"
     }
 
     var hasActiveSchedules: Bool { !schedules.isEmpty }
