@@ -30,22 +30,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         startHealthCheck()
 
-        // Listen for wake from sleep
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self,
-            selector: #selector(handleWake),
-            name: NSWorkspace.didWakeNotification,
-            object: nil
-        )
-
-        // Also restart on app becoming active (backup for lid close/open)
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleBecomeActive),
-            name: NSApplication.didBecomeActiveNotification,
-            object: nil
-        )
-
         // Track activity for auto-pause
         startInactivityTracker()
     }
