@@ -167,6 +167,11 @@ struct MoodDetailView: View {
 
             Spacer(minLength: 0)
 
+            // Reminder countdown
+            if selectedTab == 1 && settings.remindersEnabled {
+                ReminderCountdown()
+            }
+
             // Reminders disabled notice
             if selectedTab == 1 && !settings.remindersEnabled {
                 HStack(spacing: 6) {
@@ -761,6 +766,34 @@ private struct HoverEditField: View {
 }
 
 // MARK: - Item Row
+
+// MARK: - Reminder Countdown
+
+private struct ReminderCountdown: View {
+    @Environment(\.appDelegate) private var appDelegate
+    @State private var now = Date()
+
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Group {
+            if let fireDate = appDelegate?.nextReminderDate {
+                let remaining = max(0, fireDate.timeIntervalSince(now))
+                let mins = Int(remaining) / 60
+                let secs = Int(remaining) % 60
+                HStack(spacing: 5) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 10))
+                    Text("Next in \(mins):\(String(format: "%02d", secs))")
+                        .font(.system(size: 11, design: .monospaced))
+                }
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 8)
+                .onReceive(tick) { now = $0 }
+            }
+        }
+    }
+}
 
 private struct ItemRow: View {
     let text: String

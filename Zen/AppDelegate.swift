@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var presenceStore: PresenceStore?
     @Published var votePending = false
     @Published var needsResume = false
+    @Published var nextReminderDate: Date?
 
     private var modelContainer: ModelContainer?
     private var bodyReminderTimer: Timer?
@@ -241,12 +242,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func pauseBodyReminders() {
         bodyReminderTimer?.invalidate()
         bodyReminderTimer = nil
+        nextReminderDate = nil
         toastManager.dismiss()
     }
 
     private func scheduleNextBodyReminder() {
-        guard AppSettings.shared.remindersEnabled else { return }
+        guard AppSettings.shared.remindersEnabled else {
+            nextReminderDate = nil
+            return
+        }
         let delay = AppSettings.shared.reminderIntervalMinutes * 60
+        nextReminderDate = Date().addingTimeInterval(delay)
         bodyReminderTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.fireBodyReminder() }
         }
