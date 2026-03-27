@@ -248,27 +248,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         guard AppSettings.shared.remindersEnabled else { return }
         let delay = AppSettings.shared.reminderIntervalMinutes * 60
         bodyReminderTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                guard AppSettings.shared.isActive, AppSettings.shared.remindersEnabled else {
-                    self.scheduleNextBodyReminder()
-                    return
-                }
-                // Don't show reminders if:
-                // - Within 20s of next check-in
-                // - Currently in voting mode (quote/glow showing)
-                // - Within 30s of a new timer cycle (just started)
-                let tooCloseToEnd = self.timerService.isRunning && self.timerService.timeRemaining <= 20
-                let inVoting = self.votePending || self.edgePillarManager.isListening
-                let justStarted = self.timerService.isRunning && (self.timerService.currentInterval - self.timerService.timeRemaining) < 30
-                if tooCloseToEnd || inVoting || justStarted {
-                    self.scheduleNextBodyReminder()
-                    return
-                }
-                SoundService.shared.playSound(id: MoodStore.shared.activeMood.reminderSound)
-                self.toastManager.showBodyReminder()
-                self.scheduleNextBodyReminder()
-            }
+            Task { @MainActor in self?.fireBodyReminder() }
         }
+    }
+
+    private func fireBodyReminder() {
+        guard AppSettings.shared.isActive, AppSettings.shared.remindersEnabled else {
+            scheduleNextBodyReminder()
+            return
+        }
+        // Don't show reminders if:
+        // - Within 20s of next check-in
+        // - Currently in voting mode (quote/glow showing)
+        // - Within 30s of a new timer cycle (just started)
+        let tooCloseToEnd = timerService.isRunning && timerService.timeRemaining <= 20
+        let inVoting = votePending || edgePillarManager.isListening
+        let justStarted = timerService.isRunning && (timerService.currentInterval - timerService.timeRemaining) < 30
+        if tooCloseToEnd || inVoting || justStarted {
+            // Retry shortly instead of waiting a full interval
+            bodyReminderTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
+                Task { @MainActor in self?.fireBodyReminder() }
+            }
+            return
+        }
+        SoundService.shared.playSound(id: MoodStore.shared.activeMood.reminderSound)
+        toastManager.showBodyReminder()
+        scheduleNextBodyReminder()
     }
 }

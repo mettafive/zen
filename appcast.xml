@@ -24,12 +24,12 @@
                     <li>Presence analytics</li>
                 </ul>
             ]]></description>
-            <pubDate>Thu, 26 Mar 2026 23:35:00 +0100</pubDate>
+            <pubDate>Thu, 27 Mar 2026 09:55:00 +0100</pubDate>
             <enclosure
                 url="https://github.com/mettafive/zen/releases/download/v1.0.0/Zen-1.0.0.dmg"
                 type="application/octet-stream"
-                sparkle:edSignature="MeR2bWw03jDODcA9Z92PUR7dmy+ZaH0s09YM8BlTqfhRPpzpvwNJSF+lYdqoquh6beyyh0nugp8dPaHEH50FAQ=="
-                length="2456503"
+                sparkle:edSignature="tVO6i56ywi7l3tumZ8SjC4gRopTytSfVYyZFzHi/OT4tYmRj1rjN99dSH9ka0/0+JxAudCvQwIF8uIbZLu8XBQ=="
+                length="2888237"
             />
         </item>
     </channel>
