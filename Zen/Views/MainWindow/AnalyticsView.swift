@@ -117,31 +117,31 @@ struct AnalyticsView: View {
                 // Today's stats
                 HStack(spacing: 20) {
                     StatCard(
-                        title: "Today",
+                        title: "Check-ins",
                         value: "\(todayEntries.count)",
-                        subtitle: "check-ins",
+                        subtitle: "today",
                         icon: "checkmark.circle"
                     )
 
                     StatCard(
                         title: "Presence",
                         value: todayEntries.isEmpty ? "—" : "\(Int(todayPresenceRate * 100))%",
-                        subtitle: "today",
+                        subtitle: "rate today",
                         icon: "brain.head.profile"
                     )
 
                     StatCard(
                         title: "Streak",
                         value: "\(currentStreak)",
-                        subtitle: "in a row",
+                        subtitle: "current",
                         icon: "flame"
                     )
 
                     StatCard(
-                        title: "Total",
+                        title: "Quotes",
                         value: "\(allEntries.count)",
                         subtitle: "all time",
-                        icon: "number"
+                        icon: "quote.closing"
                     )
                 }
 
