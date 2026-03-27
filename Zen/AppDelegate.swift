@@ -254,8 +254,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     self.scheduleNextBodyReminder()
                     return
                 }
-                // Don't show reminders within 20s of the next check-in
-                if self.timerService.isRunning && self.timerService.timeRemaining <= 20 {
+                // Don't show reminders if:
+                // - Within 20s of next check-in
+                // - Currently in voting mode (quote/glow showing)
+                // - Within 30s of a new timer cycle (just started)
+                let tooCloseToEnd = self.timerService.isRunning && self.timerService.timeRemaining <= 20
+                let inVoting = self.votePending || self.edgePillarManager.isListening
+                let justStarted = self.timerService.isRunning && (self.timerService.currentInterval - self.timerService.timeRemaining) < 30
+                if tooCloseToEnd || inVoting || justStarted {
                     self.scheduleNextBodyReminder()
                     return
                 }
