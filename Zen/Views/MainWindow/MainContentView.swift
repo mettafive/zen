@@ -10,6 +10,7 @@ struct MainContentView: View {
     @State private var showCopiedToast = false
     @State private var showTip = false
     @State private var tipDismissed = false
+    @State private var tabContentVisible = true
 
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate
@@ -60,8 +61,13 @@ struct MainContentView: View {
                         }
                         .tag(4)
                 }
+                .opacity(tabContentVisible ? 1 : 0)
                 .onChange(of: selectedTab) {
-                    store.checkSchedule()
+                    withAnimation(.easeOut(duration: 0.12)) { tabContentVisible = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        store.checkSchedule()
+                        withAnimation(.easeIn(duration: 0.15)) { tabContentVisible = true }
+                    }
                 }
             }
             .frame(minWidth: 580, minHeight: 575)
