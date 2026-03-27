@@ -21,7 +21,7 @@ struct ZenApp: App {
                 .frame(minWidth: 580, minHeight: 575)
         }
         .modelContainer(sharedModelContainer)
-        .defaultSize(width: 640, height: 635)
+        .defaultSize(width: 800, height: 635)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates...") {
