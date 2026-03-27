@@ -78,7 +78,7 @@ struct MoodDetailView: View {
                 if settings.soundEnabled {
                     HStack(spacing: 12) {
                         HStack(spacing: 4) {
-                            Text("Quotes")
+                            Text("Quotes sound")
                                 .font(.system(size: 10))
                                 .foregroundStyle(.tertiary)
                             Picker("", selection: quoteSoundBinding) {
@@ -93,7 +93,7 @@ struct MoodDetailView: View {
                         }
 
                         HStack(spacing: 4) {
-                            Text("Reminders")
+                            Text("Reminders sound")
                                 .font(.system(size: 10))
                                 .foregroundStyle(.tertiary)
                             Picker("", selection: reminderSoundBinding) {
@@ -115,12 +115,12 @@ struct MoodDetailView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            .padding(.bottom, 4)
+            .padding(.bottom, 16)
 
             // Header — centered
             header
                 .padding(.horizontal, 20)
-                .padding(.bottom, 16)
+                .padding(.bottom, 12)
 
             Divider()
 
@@ -218,14 +218,14 @@ struct MoodDetailView: View {
     // MARK: - Header (centered)
 
     private var header: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             // Icon
             if editingIcon {
                 VStack(spacing: 8) {
                     HStack {
                         Spacer()
                         Text(mood.icon)
-                            .font(.system(size: 48))
+                            .font(.system(size: 43))
                         Spacer()
                     }
 
@@ -272,7 +272,7 @@ struct MoodDetailView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
             } else {
                 Text(mood.icon)
-                    .font(.system(size: 48))
+                    .font(.system(size: 43))
                     .onHover { h in }
                     .overlay(alignment: .topTrailing) {
                         if iconHovered {
