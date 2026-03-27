@@ -90,22 +90,23 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Debug") {
-                Button("Set timer to 5 seconds") {
-                    guard let timer = appDelegate?.timerService else { return }
-                    timer.pause()
-                    timer.timeRemaining = 5
-                    timer.start()
-                }
-            }
-
-            Section {
+            Section("Guides") {
                 Button("Show Onboarding") {
                     settings.onboardingComplete = false
                 }
+
+                if settings.scheduleOnboardingComplete {
+                    Button("Show Schedule Guide") {
+                        settings.scheduleOnboardingComplete = false
+                    }
+                }
             }
 
             Section {
+                Text("Danger Zone")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.red.opacity(0.7))
+
                 Button("Reset Settings") {
                     showResetSettings = true
                 }
@@ -114,6 +115,23 @@ struct SettingsView: View {
                     showResetEverything = true
                 }
                 .foregroundStyle(.red)
+            }
+
+            Section("Debug") {
+                DisclosureGroup("Developer Tools") {
+                    Button("Set timer to 5 seconds") {
+                        guard let timer = appDelegate?.timerService else { return }
+                        timer.pause()
+                        timer.timeRemaining = 5
+                        timer.start()
+                    }
+
+                    Text("For testing check-in flow.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
